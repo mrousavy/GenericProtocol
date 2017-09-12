@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using GenericProtocol.Implementation;
 
 namespace GenericProtocolTest {
@@ -15,14 +11,15 @@ namespace GenericProtocolTest {
             StartServer();
             StartClient();
 
-            while (true)
-            Console.ReadKey();
+            while (true) Console.ReadKey();
         }
 
 
         private static void StartClient() {
-            //var client = new GenericProtocol.Implementation.ProtoClient<string>(IPAddress.Any, 1024);
-            //client.Start().GetAwaiter().GetResult();
+            var client = new ProtoClient<string>(IPAddress.Parse("127.0.0.1"), 1024);
+            client.Start().GetAwaiter().GetResult();
+            client.ReceivedMessage += ClientMessageReceived;
+            client.Send("Hello Server!").GetAwaiter().GetResult();
         }
 
         private static void StartServer() {
@@ -31,15 +28,18 @@ namespace GenericProtocolTest {
             _server.Start().GetAwaiter().GetResult();
             Console.WriteLine("Server started!");
             _server.ClientConnected += ClientConnected;
-            _server.ReceivedMessage += MessageReceived;
+            _server.ReceivedMessage += ServerMessageReceived;
         }
 
-        private static void MessageReceived(IPAddress sender, string message) {
+        private static void ServerMessageReceived(IPAddress sender, string message) {
+            Console.WriteLine($"{sender}: {message}");
+        }
+        private static void ClientMessageReceived(IPAddress sender, string message) {
             Console.WriteLine($"{sender}: {message}");
         }
 
-        private static void ClientConnected(IPAddress address) {
-            _server.Send("hello!", address);
+        private static async void ClientConnected(IPAddress address) {
+            await _server.Send($"Hello {address}!", address);
         }
     }
 }
