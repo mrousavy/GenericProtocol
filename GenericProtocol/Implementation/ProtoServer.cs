@@ -69,7 +69,8 @@ namespace GenericProtocol.Implementation {
                     var address = endpoint?.Address; // Get IP address
                     Clients.Add(address, client); // Add client to dictionary
 
-                    StartReading(client);
+                    StartReading(client); // Start listening for data
+                    KeepAlive(client); // Keep client alive and ping
 
                     ClientConnected?.Invoke(address); // call event
                 } catch (SocketException ex) {
@@ -102,6 +103,20 @@ namespace GenericProtocol.Implementation {
                         return;
                 }
                 // Listen again after client connected
+            }
+        }
+
+        // Keep a Client alive by pinging
+        private async void KeepAlive(Socket client) {
+            while (true) {
+                await Task.Delay(Constants.PingDelay);
+
+                bool isAlive = client.Ping();
+                if (isAlive) continue; // Client responded
+                
+                // Client does not respond, disconnect & exit
+                DisconnectClient(client);
+                return;
             }
         }
 
