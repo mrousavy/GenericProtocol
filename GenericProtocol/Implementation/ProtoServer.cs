@@ -83,7 +83,6 @@ namespace GenericProtocol.Implementation {
         // Endless Start reading loop
         private async void StartReading(Socket client) {
             var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
-            var address = endpoint?.Address; // Get IP address
 
             // Loop theoretically infinetly
             while (true) {
@@ -92,13 +91,15 @@ namespace GenericProtocol.Implementation {
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
                     int read = await client.ReceiveAsync(segment, SocketFlags.None);
 
+                    if (read < 1) throw new TransferException($"{read} bytes were read!");
+
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
                     ReceivedMessage?.Invoke(endpoint, message); // call event
                 } catch (SocketException ex) {
                     Console.WriteLine(ex.ErrorCode);
                     bool success = DisconnectClient(client); // try to disconnect
-                    if(success) // Exit Reading loop once successfully disconnected
+                    if (success) // Exit Reading loop once successfully disconnected
                         return;
                 }
                 // Listen again after client connected
@@ -112,7 +113,7 @@ namespace GenericProtocol.Implementation {
 
                 bool isAlive = client.Ping();
                 if (isAlive) continue; // Client responded
-                
+
                 // Client does not respond, disconnect & exit
                 DisconnectClient(client);
                 return;
@@ -124,10 +125,12 @@ namespace GenericProtocol.Implementation {
             IEnumerable<KeyValuePair<IPEndPoint, Socket>> filtered = Clients.Where(c => c.Value == client);
             foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered) {
                 try {
-                    kvp.Value.Disconnect(false);
+                    kvp.Value.Disconnect(false); // Gracefully disconnect socket
                     kvp.Value.Close();
                     kvp.Value.Dispose();
-                    Clients.Remove(kvp.Key);
+
+                    Clients.Remove(kvp.Key); // Remove from collection
+                    ClientDisconnected?.Invoke(kvp.Key); // Event
                 } catch {
                     // could not disconnect socket
                     return false;
@@ -150,15 +153,17 @@ namespace GenericProtocol.Implementation {
         }
 
         public async Task Send(T message, IPEndPoint to) {
-            if(message == null) throw new ArgumentNullException(nameof(message));
+            if (message == null) throw new ArgumentNullException(nameof(message));
 
             byte[] bytes = ZeroFormatterSerializer.Serialize(message);
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
 
             var socket = Clients.FirstOrDefault(c => c.Key.Equals(to)).Value;
-            if(socket == null) throw new Exception($"The IP Address {to} could not be found!");
+            if (socket == null) throw new Exception($"The IP Address {to} could not be found!");
 
             int sent = await socket.SendAsync(segment, SocketFlags.None);
+
+            if (sent < 1) throw new TransferException($"{sent} bytes were sent!");
         }
 
         public Task Broadcast(T message) {
