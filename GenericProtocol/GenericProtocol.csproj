@@ -2,6 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>Generic Protocol</PackageId>
+    <Version>1.0.1</Version>
+    <Authors>mrousavy, cbarosch</Authors>
+    <Company>mrousavy</Company>
+    <Product>Generic Protocol</Product>
+    <Description>A fast TCP event based buffered server/client protocol for transferring data over the network in .NET Core/Classic</Description>
+    <PackageLicenseUrl>https://github.com/mrousavy/GenericProtocol/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/mrousavy/GenericProtocol</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/mrousavy/GenericProtocol</RepositoryUrl>
+    <RepositoryType>GitHub</RepositoryType>
+    <PackageTags>tcp socket protocol client server</PackageTags>
+    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+    <FileVersion>1.0.0.1</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
