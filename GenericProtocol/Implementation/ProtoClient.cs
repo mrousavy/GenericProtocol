@@ -88,11 +88,12 @@ namespace GenericProtocol.Implementation
             Socket.Dispose();
         }
 
-        public Task Send(T message) {
+        public async Task Send(T message) {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
             byte[] bytes = ZeroFormatterSerializer.Serialize(message);
-            throw new NotImplementedException();
+            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+            int written = await Socket.SendAsync(segment, SocketFlags.None);
         }
 
         public void Dispose() {
