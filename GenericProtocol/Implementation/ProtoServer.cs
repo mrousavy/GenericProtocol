@@ -11,6 +11,8 @@ namespace GenericProtocol.Implementation {
         #region Properties
 
         public const int MaxConnectionsBacklog = 10;
+        public const int ReceiveBufferSize = 1024;
+
         public event ClientContextHandler ClientConnected;
         public event ClientContextHandler ClientDisconnected;
         public event ReceivedHandler<T> ReceivedMessage;
@@ -86,7 +88,7 @@ namespace GenericProtocol.Implementation {
             // Loop theoretically infinetly
             while (true) {
                 try {
-                    byte[] bytes = new byte[1024];
+                    byte[] bytes = new byte[ReceiveBufferSize];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
                     int read = await client.ReceiveAsync(segment, SocketFlags.None);
 
@@ -110,6 +112,7 @@ namespace GenericProtocol.Implementation {
                 try {
                     kvp.Value.Disconnect(false);
                     kvp.Value.Close();
+                    kvp.Value.Dispose();
                     Clients.Remove(kvp.Key);
                 } catch {
                     // could not disconnect socket
@@ -144,6 +147,7 @@ namespace GenericProtocol.Implementation {
         }
 
         public void Dispose() {
+            Stop();
             Socket?.Dispose();
         }
     }
