@@ -10,8 +10,8 @@ namespace GenericProtocol.Implementation {
     public class ProtoServer<T> : IServer<T> {
         #region Properties
 
-        public const int MaxConnectionsBacklog = 10;
-        public const int ReceiveBufferSize = 1024;
+        public int MaxConnectionsBacklog = Constants.MaxConnectionsBacklog;
+        public int ReceiveBufferSize = Constants.ReceiveBufferSize;
 
         public event ClientContextHandler ClientConnected;
         public event ClientContextHandler ClientDisconnected;
@@ -135,11 +135,16 @@ namespace GenericProtocol.Implementation {
             }
         }
 
-        public Task Send(T message, IPAddress to) {
+        public async Task Send(T message, IPAddress to) {
             if(message == null) throw new ArgumentNullException(nameof(message));
 
             byte[] bytes = ZeroFormatterSerializer.Serialize(message);
-            throw new NotImplementedException();
+            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+
+            var socket = Clients.FirstOrDefault(c => c.Key.Equals(to)).Value;
+            if(socket == null) throw new Exception($"The IP Address {to} could not be found!");
+
+            int sent = await socket.SendAsync(segment, SocketFlags.None);
         }
 
         public Task Broadcast(T message) {

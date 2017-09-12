@@ -1,17 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Tasks;
 using ZeroFormatter;
 
-namespace GenericProtocol.Implementation
-{
+namespace GenericProtocol.Implementation {
     public class ProtoClient<T> : IClient<T> {
         #region Properties
 
-        public const int ReceiveBufferSize = 1024;
+        public int ReceiveBufferSize = Constants.ReceiveBufferSize;
         
         public event ReceivedHandler<T> ReceivedMessage;
 
