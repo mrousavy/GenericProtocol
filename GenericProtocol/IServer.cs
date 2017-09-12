@@ -2,8 +2,16 @@
 using System;
 using System.Net;
 using System.Threading.Tasks;
+using ZeroFormatter;
 
 namespace GenericProtocol {
+    /// <summary>
+    /// A <see cref="GenericProtocol"/> Server.
+    /// <para/>
+    /// (<see cref="T"/> should be marked as <see cref="ZeroFormattableAttribute"/>)
+    /// </summary>
+    /// <typeparam name="T">The Type of the Messages to use
+    /// (has to be ZeroFormatter marked, see: <see href="https://github.com/neuecc/ZeroFormatter"/>)</typeparam>
     public interface IServer<T> : IDisposable {
         event ClientContextHandler ClientConnected;
         event ClientContextHandler ClientDisconnected;
@@ -19,7 +27,7 @@ namespace GenericProtocol {
         /// Stop the Server and disconnect all Clients
         /// gracefully
         /// </summary>
-        Task Stop();
+        void Stop();
 
         /// <summary>
         /// Send a new Message to the Client
