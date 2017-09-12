@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.0;netstandard2.0</TargetFrameworks>
-    <PackageId>Generic Protocol</PackageId>
+    <PackageId>GenericProtocol</PackageId>
     <Version>1.0.1</Version>
     <Authors>mrousavy, cbarosch</Authors>
     <Company>mrousavy</Company>
