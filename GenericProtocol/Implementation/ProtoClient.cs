@@ -68,7 +68,7 @@ namespace GenericProtocol.Implementation {
 
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
-                    ReceivedMessage?.Invoke(EndPoint?.Address, message); // call event
+                    ReceivedMessage?.Invoke(EndPoint, message); // call event
                 } catch (SocketException ex) {
                     Console.WriteLine(ex.ErrorCode);
                 }

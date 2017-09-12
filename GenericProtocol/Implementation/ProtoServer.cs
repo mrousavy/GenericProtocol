@@ -13,13 +13,13 @@ namespace GenericProtocol.Implementation {
         public int MaxConnectionsBacklog = Constants.MaxConnectionsBacklog;
         public int ReceiveBufferSize = Constants.ReceiveBufferSize;
 
-        public event ClientContextHandler ClientConnected;
-        public event ClientContextHandler ClientDisconnected;
+        public event ConnectionContextHandler ClientConnected;
+        public event ConnectionContextHandler ClientDisconnected;
         public event ReceivedHandler<T> ReceivedMessage;
 
         private IPEndPoint EndPoint { get; }
         private Socket Socket { get; }
-        private IDictionary<IPAddress, Socket> Clients { get; }
+        private IDictionary<IPEndPoint, Socket> Clients { get; }
         #endregion
 
         #region ctor
@@ -44,7 +44,7 @@ namespace GenericProtocol.Implementation {
         /// <param name="address">The <see cref="IPAddress"/> to start this Protocol on</param>
         /// <param name="port">The Port to start this Protocol on</param>
         public ProtoServer(IPAddress address, int port, AddressFamily family, SocketType type) {
-            Clients = new Dictionary<IPAddress, Socket>();
+            Clients = new Dictionary<IPEndPoint, Socket>();
             EndPoint = new IPEndPoint(address, port);
             Socket = new Socket(family, type, ProtocolType.Tcp);
         }
@@ -66,13 +66,12 @@ namespace GenericProtocol.Implementation {
                 try {
                     var client = await Socket.AcceptAsync(); // Block until accept
                     var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
-                    var address = endpoint?.Address; // Get IP address
-                    Clients.Add(address, client); // Add client to dictionary
+                    Clients.Add(endpoint, client); // Add client to dictionary
 
                     StartReading(client); // Start listening for data
                     KeepAlive(client); // Keep client alive and ping
 
-                    ClientConnected?.Invoke(address); // call event
+                    ClientConnected?.Invoke(endpoint); // call event
                 } catch (SocketException ex) {
                     Console.WriteLine(ex.ErrorCode);
                     //return;
@@ -95,7 +94,7 @@ namespace GenericProtocol.Implementation {
 
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
-                    ReceivedMessage?.Invoke(address, message); // call event
+                    ReceivedMessage?.Invoke(endpoint, message); // call event
                 } catch (SocketException ex) {
                     Console.WriteLine(ex.ErrorCode);
                     bool success = DisconnectClient(client); // try to disconnect
@@ -122,8 +121,8 @@ namespace GenericProtocol.Implementation {
 
         // Disconnect a client; returns true if successful
         private bool DisconnectClient(Socket client) {
-            IEnumerable<KeyValuePair<IPAddress, Socket>> filtered = Clients.Where(c => c.Value == client);
-            foreach (KeyValuePair<IPAddress, Socket> kvp in filtered) {
+            IEnumerable<KeyValuePair<IPEndPoint, Socket>> filtered = Clients.Where(c => c.Value == client);
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered) {
                 try {
                     kvp.Value.Disconnect(false);
                     kvp.Value.Close();
@@ -141,7 +140,7 @@ namespace GenericProtocol.Implementation {
         /// Shutdown the server and all active clients
         /// </summary>
         public void Stop() {
-            foreach (KeyValuePair<IPAddress, Socket> kvp in Clients) {
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Clients) {
                 try {
                     DisconnectClient(kvp.Value);
                 } catch {
@@ -150,7 +149,7 @@ namespace GenericProtocol.Implementation {
             }
         }
 
-        public async Task Send(T message, IPAddress to) {
+        public async Task Send(T message, IPEndPoint to) {
             if(message == null) throw new ArgumentNullException(nameof(message));
 
             byte[] bytes = ZeroFormatterSerializer.Serialize(message);

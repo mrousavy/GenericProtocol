@@ -13,8 +13,8 @@ namespace GenericProtocol {
     /// <typeparam name="T">The Type of the Messages to use
     /// (has to be ZeroFormatter marked, see: <see href="https://github.com/neuecc/ZeroFormatter"/>)</typeparam>
     public interface IServer<T> : IDisposable {
-        event ClientContextHandler ClientConnected;
-        event ClientContextHandler ClientDisconnected;
+        event ConnectionContextHandler ClientConnected;
+        event ConnectionContextHandler ClientDisconnected;
         event ReceivedHandler<T> ReceivedMessage;
 
         /// <summary>
@@ -34,9 +34,9 @@ namespace GenericProtocol {
         /// </summary>
         /// <param name="message">The message object
         /// to serialize and send to the client</param>
-        /// <param name="to">The client to send the 
-        /// message to</param>
-        Task Send(T message, IPAddress to);
+        /// <param name="to">The client (IP + Port) 
+        /// to send the message to</param>
+        Task Send(T message, IPEndPoint to);
 
         /// <summary>
         /// Broadcast a new Message to all connected Clients

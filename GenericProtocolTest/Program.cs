@@ -31,14 +31,14 @@ namespace GenericProtocolTest {
             _server.ReceivedMessage += ServerMessageReceived;
         }
 
-        private static void ServerMessageReceived(IPAddress sender, string message) {
+        private static void ServerMessageReceived(IPEndPoint sender, string message) {
             Console.WriteLine($"{sender}: {message}");
         }
-        private static void ClientMessageReceived(IPAddress sender, string message) {
+        private static void ClientMessageReceived(IPEndPoint sender, string message) {
             Console.WriteLine($"{sender}: {message}");
         }
 
-        private static async void ClientConnected(IPAddress address) {
+        private static async void ClientConnected(IPEndPoint address) {
             await _server.Send($"Hello {address}!", address);
         }
     }

@@ -2,11 +2,11 @@
 
 namespace GenericProtocol.Implementation {
 
-    public delegate void ClientContextHandler(
-        IPAddress clientIp);
+    public delegate void ConnectionContextHandler(
+        IPEndPoint endPoint);
 
     public delegate void ReceivedHandler<T>(
-        IPAddress senderIp,
+        IPEndPoint senderEndPoint,
         T message);
 
     public static class Constants {
