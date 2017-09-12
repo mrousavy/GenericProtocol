@@ -7,13 +7,15 @@ using System.Threading.Tasks;
 namespace GenericProtocol.Implementation {
     public class ProtoServer<T> : IServer<T> {
         #region Properties
+
+        public const int MaxConnectionsBacklog = 10;
         public event ClientContextHandler ClientConnected;
         public event ClientContextHandler ClientDisconnected;
         public event ReceivedHandler<T> ReceivedMessage;
 
         private IPEndPoint EndPoint { get; }
         private Socket Socket { get; }
-        private IList<IPAddress> Clients { get; }
+        private IList<Socket> Clients { get; }
         #endregion
 
         #region ctor
@@ -38,7 +40,7 @@ namespace GenericProtocol.Implementation {
         /// <param name="address">The <see cref="IPAddress"/> to start this Protocol on</param>
         /// <param name="port">The Port to start this Protocol on</param>
         public ProtoServer(IPAddress address, int port, AddressFamily family, SocketType type) {
-            Clients = new List<IPAddress>();
+            Clients = new List<Socket>();
             EndPoint = new IPEndPoint(address, port);
             Socket = new Socket(family, type, ProtocolType.Tcp);
         }
@@ -49,6 +51,21 @@ namespace GenericProtocol.Implementation {
         /// </summary>
         public Task Start() {
             return Task.Run(() => Socket.Bind(EndPoint));
+        }
+
+        private async void StartListening() {
+            try {
+                var client = await Socket.AcceptAsync(); // Block until accept
+                Clients.Add(client);
+                
+                var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
+                ClientConnected?.Invoke(ClientContextAction.Connected, endpoint?.Address); // call event
+            } catch (SocketException ex) {
+                Console.WriteLine(ex.ErrorCode);
+                //return;
+            }
+            // Listen again after client connected
+            StartListening();
         }
 
         /// <summary>
