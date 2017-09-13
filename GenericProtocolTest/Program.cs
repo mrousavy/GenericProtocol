@@ -5,23 +5,43 @@ using GenericProtocol.Implementation;
 namespace GenericProtocolTest {
     public class Program {
         private static ProtoServer<string> _server;
+        private static ProtoClient<string> _client;
+        private static bool TestServer = true;
+        private static bool TestClient = true;
 
 
         private static void Main(string[] args) {
-            StartServer();
-            StartClient();
+            if (TestServer)
+                StartServer();
+            if (TestClient)
+                StartClient();
 
-            while (true) Console.ReadKey();
+            Console.WriteLine("\n");
+
+            while (true) {
+                string text = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(text)) continue;
+
+                if (TestClient) {
+                    SendToServer(text);
+                } else {
+                    SendToClients(text);
+                }
+            }
         }
 
 
         private static void StartClient() {
-            var client = new ProtoClient<string>(IPAddress.Parse("127.0.0.1"), 1024);
-            client.Start().GetAwaiter().GetResult();
-            client.ReceivedMessage += ClientMessageReceived;
-            client.ConnectionLost += Client_ConnectionLost;
-            client.Send("Hello Server!").GetAwaiter().GetResult();
+            _client = new ProtoClient<string>(IPAddress.Parse("127.0.0.1"), 1024);
+            _client.Start().GetAwaiter().GetResult();
+            _client.ReceivedMessage += ClientMessageReceived;
+            _client.ConnectionLost += Client_ConnectionLost;
+            _client.Send("Hello Server!").GetAwaiter().GetResult();
         }
+
+        private static void SendToServer(string message) { _client?.Send(message); }
+
+        private static void SendToClients(string message) { _server?.Broadcast(message); }
 
         private static void Client_ConnectionLost(IPEndPoint endPoint) {
             Console.WriteLine(endPoint.Address);
