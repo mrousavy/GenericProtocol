@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using ZeroFormatter;
 
@@ -24,6 +25,7 @@ namespace GenericProtocol.Implementation {
         #endregion
 
         #region ctor
+
         /// <summary>
         /// Create a new instance of the <see cref="ProtoClient{T}"/>
         /// with the default <see cref="AddressFamily"/> and <see cref="SocketType"/>.
@@ -53,10 +55,18 @@ namespace GenericProtocol.Implementation {
         /// <summary>
         /// Start and Connect to the Server with the set IP Address.
         /// </summary>
-        public async Task Start() {
+        /// <param name="seperateThread">True, if the <see cref="ProtoClient{T}"/>
+        /// should be operating on a seperate Thread.</param>
+        public async Task Start(bool seperateThread = false) {
             await Socket.ConnectAsync(EndPoint);
-            StartReceiving();
-            KeepAlive();
+
+            if (seperateThread) { // Launch on a new Thread
+                new Thread(StartReceiving).Start();
+                new Thread(KeepAlive).Start();
+            } else { // Use Tasks
+                StartReceiving();
+                KeepAlive();
+            }
         }
 
         // Endless Start reading loop
@@ -86,7 +96,7 @@ namespace GenericProtocol.Implementation {
             Socket.Close();
             Socket.Dispose();
         }
-        
+
         // Reconnect the Socket connection
         private async Task Reconnect() {
             Socket.Disconnect(true);

@@ -20,7 +20,9 @@ namespace GenericProtocol {
         /// Connect the Socket to the set IP Address
         /// and start receiving messages
         /// </summary>
-        Task Start();
+        /// <param name="seperateThread">True, if the <see cref="ProtoClient{T}"/>
+        /// should be operating on a seperate Thread.</param>
+        Task Start(bool seperateThread);
 
         /// <summary>
         /// Gracefully disconnect from the Server

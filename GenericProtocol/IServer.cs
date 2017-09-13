@@ -21,7 +21,9 @@ namespace GenericProtocol {
         /// Bind the Socket to the set IP Address 
         /// and start listening for incoming connections
         /// </summary>
-        Task Start();
+        /// <param name="seperateThread">True, if the <see cref="ProtoClient{T}"/>
+        /// should be operating on a seperate Thread.</param>
+        void Start(bool seperateThread);
 
         /// <summary>
         /// Stop the Server and disconnect all Clients

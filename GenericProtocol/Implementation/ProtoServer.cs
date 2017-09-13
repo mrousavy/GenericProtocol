@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using ZeroFormatter;
 
@@ -53,9 +54,14 @@ namespace GenericProtocol.Implementation {
         /// <summary>
         /// Bind and Start the Server to the set IP Address.
         /// </summary>
-        public async Task Start() {
-            await Task.Run(() => Socket.Bind(EndPoint));
-            StartListening();
+        public void Start(bool seperateThread = false) {
+            Socket.Bind(EndPoint);
+
+            if (seperateThread) { // Launch on a new Thread
+                new Thread(StartListening).Start();
+            } else { // Use Tasks
+                StartListening();
+            }
         }
 
         // Endless Start listening loop
