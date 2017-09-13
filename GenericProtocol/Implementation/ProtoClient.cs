@@ -102,7 +102,7 @@ namespace GenericProtocol.Implementation {
 
         // Read the prefix from a message (number of following bytes)
         private async Task<int> ReadLeading() {
-            byte[] bytes = new byte[Constants.LeadingByteSize];
+            byte[] bytes = new byte[sizeof(int)];
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
             // read leading bytes
             int read = await Socket.ReceiveAsync(segment, SocketFlags.None);
@@ -112,6 +112,17 @@ namespace GenericProtocol.Implementation {
             // size of the following byte[]
             int size = ZeroFormatterSerializer.Deserialize<int>(segment.Array);
             return size;
+        }
+
+        // Send the prefix from a message (number of following bytes)
+        private async Task SendLeading(int size) {
+            // build byte[] out of size
+            byte[] bytes = ZeroFormatterSerializer.Serialize(size);
+            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+            // send leading bytes
+            int sent = await Socket.SendAsync(segment, SocketFlags.None);
+
+            if (sent < 1) throw new TransferException($"{sent} lead-bytes were sent!");
         }
 
         /// <summary>
@@ -133,9 +144,22 @@ namespace GenericProtocol.Implementation {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
             try {
+                // build byte[] out of message (serialize with ZeroFormatter)
                 byte[] bytes = ZeroFormatterSerializer.Serialize(message);
                 ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
-                int written = await Socket.SendAsync(segment, SocketFlags.None);
+
+                int size = bytes.Length;
+                await SendLeading(size); // Send receiver the byte count
+
+                int written = 0;
+                while (written < size) {
+                    int send = size - written; // current buffer size
+                    if (send > ReceiveBufferSize)
+                        send = ReceiveBufferSize; // max size
+
+                    var slice = segment.Slice(written, send); // buffered portion of array
+                    written = await Socket.SendAsync(slice, SocketFlags.None);
+                }
 
                 if (written < 1) throw new TransferException($"{written} bytes were sent!");
             } catch (SocketException ex) {
