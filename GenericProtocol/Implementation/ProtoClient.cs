@@ -74,11 +74,21 @@ namespace GenericProtocol.Implementation {
             // Loop theoretically infinetly
             while (true) {
                 try {
-                    byte[] bytes = new byte[ReceiveBufferSize];
-                    ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
-                    int read = await Socket.ReceiveAsync(segment, SocketFlags.None);
+                    // Read the leading "byte"
+                    int size = await ReadLeading();
 
-                    if (read < 1) throw new TransferException($"{read} bytes were read!");
+                    byte[] bytes = new byte[size];
+                    ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+                    // read until all data is read
+                    int read = 0;
+                    while (read < size) {
+                        int receive = size - read; // current buffer size
+                        if (receive > ReceiveBufferSize)
+                            receive = ReceiveBufferSize; // max size
+
+                        var slice = segment.Slice(read, receive); // get buffered portion of array
+                        read += await Socket.ReceiveAsync(slice, SocketFlags.None);
+                    }
 
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
@@ -88,6 +98,20 @@ namespace GenericProtocol.Implementation {
                 }
                 // Listen again after client connected
             }
+        }
+
+        // Read the prefix from a message (number of following bytes)
+        private async Task<int> ReadLeading() {
+            byte[] bytes = new byte[Constants.LeadingByteSize];
+            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+            // read leading bytes
+            int read = await Socket.ReceiveAsync(segment, SocketFlags.None);
+
+            if (read < 1) throw new TransferException($"{read} lead-bytes were read!");
+
+            // size of the following byte[]
+            int size = ZeroFormatterSerializer.Deserialize<int>(segment.Array);
+            return size;
         }
 
         /// <summary>
