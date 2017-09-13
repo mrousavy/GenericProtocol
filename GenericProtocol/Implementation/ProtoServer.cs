@@ -152,9 +152,18 @@ namespace GenericProtocol.Implementation {
                 try {
                     int size = await ReadLeading(client); // leading "byte"
 
-                    byte[] bytes = new byte[ReceiveBufferSize];
+                    byte[] bytes = new byte[size];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
-                    int read = await client.ReceiveAsync(segment, SocketFlags.None);
+                    // read until all data is read
+                    int read = 0;
+                    while (read < size) {
+                        int receive = size - read; // current buffer size
+                        if (receive > ReceiveBufferSize)
+                            receive = ReceiveBufferSize; // max size
+
+                        var slice = segment.Slice(read, receive); // get buffered portion of array
+                        read += await Socket.ReceiveAsync(slice, SocketFlags.None);
+                    }
 
                     if (read < 1) throw new TransferException($"{read} bytes were read!");
 
