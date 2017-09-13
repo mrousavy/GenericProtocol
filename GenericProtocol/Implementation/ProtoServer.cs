@@ -103,7 +103,8 @@ namespace GenericProtocol.Implementation {
                 written = await socket.SendAsync(slice, SocketFlags.None);
             }
 
-            if (written < 1) throw new TransferException($"{written} bytes were sent!");
+            if (written < 1) throw new TransferException($"{written} bytes were sent! " +
+                                                         "Null bytes could mean a connection shutdown.");
         }
 
         public async Task Broadcast(T message) {
@@ -150,22 +151,23 @@ namespace GenericProtocol.Implementation {
             // Loop theoretically infinetly
             while (true) {
                 try {
-                    int size = await ReadLeading(client); // leading "byte"
+                    long size = await ReadLeading(client); // leading "byte"
 
                     byte[] bytes = new byte[size];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
                     // read until all data is read
                     int read = 0;
                     while (read < size) {
-                        int receive = size - read; // current buffer size
+                        long receive = size - read; // current buffer size
                         if (receive > ReceiveBufferSize)
                             receive = ReceiveBufferSize; // max size
 
-                        var slice = segment.SliceEx(read, receive); // get buffered portion of array
+                        var slice = segment.SliceEx(read, (int)receive); // get buffered portion of array
                         read += await client.ReceiveAsync(slice, SocketFlags.None);
                     }
 
-                    if (read < 1) throw new TransferException($"{read} bytes were read!");
+                    if (read < 1) throw new TransferException($"{read} bytes were read! " +
+                                                              "Null bytes could mean a connection shutdown.");
 
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
@@ -176,10 +178,10 @@ namespace GenericProtocol.Implementation {
                     if (success) // Exit Reading loop once successfully disconnected
                         return;
                 } catch (TransferException) {
-                    // 0 read bytes, probably null byte?
+                    // 0 read bytes = null byte
                     bool success = DisconnectClient(client); // try to disconnect
                     if (success) // Exit Reading loop once successfully disconnected
-                        throw;
+                        return;
                 }
                 // Listen again after client connected
             }
@@ -203,6 +205,7 @@ namespace GenericProtocol.Implementation {
         private bool DisconnectClient(Socket client) {
             KeyValuePair<IPEndPoint, Socket>[] filtered = Clients.Where(c => c.Value == client).ToArray();
             foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered) {
+
                 try {
                     kvp.Value.Disconnect(false); // Gracefully disconnect socket
                     kvp.Value.Close();
@@ -211,36 +214,38 @@ namespace GenericProtocol.Implementation {
                     Clients.Remove(kvp.Key); // Remove from collection
                     ClientDisconnected?.Invoke(kvp.Key); // Event
                 } catch {
-                    // could not disconnect socket
-                    return false;
+                    // Socket is either already disconnected, or failing to disconnect. try ping
+                    return !kvp.Value.Ping();
                 }
             }
             return true;
         }
 
         // Read the prefix from a message (number of following bytes)
-        private async Task<int> ReadLeading(Socket client) {
-            byte[] bytes = new byte[sizeof(int)];
+        private async Task<long> ReadLeading(Socket client) {
+            byte[] bytes = new byte[sizeof(long)];
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
             // read leading bytes
             int read = await client.ReceiveAsync(segment, SocketFlags.None);
 
-            if (read < 1) throw new TransferException($"{read} lead-bytes were read!");
+            if (read < 1) throw new TransferException($"{read} lead-bytes were read! " +
+                                                      "Null bytes could mean a connection shutdown.");
 
             // size of the following byte[]
-            int size = ZeroFormatterSerializer.Deserialize<int>(segment.Array);
+            long size = ZeroFormatterSerializer.Deserialize<long>(segment.Array);
             return size;
         }
 
         // Send the prefix from a message (number of following bytes)
-        private async Task SendLeading(int size, Socket client) {
+        private async Task SendLeading(long size, Socket client) {
             // build byte[] out of size
             byte[] bytes = ZeroFormatterSerializer.Serialize(size);
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
             // send leading bytes
             int sent = await client.SendAsync(segment, SocketFlags.None);
 
-            if (sent < 1) throw new TransferException($"{sent} lead-bytes were sent!");
+            if (sent < 1) throw new TransferException($"{sent} lead-bytes were sent! " +
+                                                      "Null bytes could mean a connection shutdown.");
         }
         #endregion
     }
