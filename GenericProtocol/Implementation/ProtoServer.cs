@@ -119,6 +119,11 @@ namespace GenericProtocol.Implementation {
             await Task.WhenAll(tasks);
         }
 
+
+        public bool Kick(IPEndPoint endPoint) {
+            return DisconnectClient(endPoint);
+        }
+
         public void Dispose() {
             Stop();
             Socket?.Dispose();
@@ -210,6 +215,24 @@ namespace GenericProtocol.Implementation {
         // Disconnect a client; returns true if successful
         private bool DisconnectClient(Socket client) {
             KeyValuePair<IPEndPoint, Socket>[] filtered = Clients.Where(c => c.Value == client).ToArray();
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered)
+                try {
+                    kvp.Value.Disconnect(false); // Gracefully disconnect socket
+                    kvp.Value.Close();
+                    kvp.Value.Dispose();
+
+                    Clients.Remove(kvp.Key); // Remove from collection
+                    ClientDisconnected?.Invoke(kvp.Key); // Event
+                } catch {
+                    // Socket is either already disconnected, or failing to disconnect. try ping
+                    return !kvp.Value.Ping();
+                }
+            return true;
+        }
+
+        // Disconnect a client; returns true if successful
+        private bool DisconnectClient(IPEndPoint endPoint) {
+            KeyValuePair<IPEndPoint, Socket>[] filtered = Clients.Where(c => c.Key.Equals(endPoint)).ToArray();
             foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered)
                 try {
                     kvp.Value.Disconnect(false); // Gracefully disconnect socket

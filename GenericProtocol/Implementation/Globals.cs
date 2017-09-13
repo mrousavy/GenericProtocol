@@ -24,4 +24,8 @@ namespace GenericProtocol.Implementation {
     public class TransferException : Exception {
         public TransferException(string message) : base(message) { }
     }
+
+    public class NotFoundException : Exception {
+        public NotFoundException(string message) : base(message) { }
+    }
 }

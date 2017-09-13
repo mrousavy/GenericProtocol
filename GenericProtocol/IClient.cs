@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
 using GenericProtocol.Implementation;
-using ZeroFormatter;
 
 namespace GenericProtocol {
     /// <summary>
     ///     A <see cref="GenericProtocol" /> Client.
     ///     <para />
-    ///     (<see cref="T" /> should be marked as <see cref="ZeroFormattableAttribute" />)
+    ///     (<see cref="T" /> should be marked as <see cref="ZeroFormatter.ZeroFormattableAttribute" />)
     /// </summary>
     /// <typeparam name="T">
     ///     The Type of the Messages to use
