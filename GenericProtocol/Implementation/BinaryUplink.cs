@@ -7,7 +7,7 @@ using ZeroFormatter;
 
 namespace GenericProtocol.Implementation {
     /// <summary>
-    ///     A protocol for transferring large binary data (BLOBs) like images or files.
+    ///     A protocol for transferring binary large objects (BLOBs) like images or files.
     /// </summary>
     public class BinaryUplink : IClient<byte[]> {
         #region Properties
