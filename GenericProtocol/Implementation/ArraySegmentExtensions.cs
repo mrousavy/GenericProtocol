@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace GenericProtocol.Implementation {
     public static class ArraySegmentExtensions {
         /// <summary>
-        /// Take a portion of this <see cref="ArraySegment{T}"/>
+        ///     Take a portion of this <see cref="ArraySegment{T}" />
         /// </summary>
         /// <param name="segment">this</param>
         /// <param name="start">The start index of the slice</param>

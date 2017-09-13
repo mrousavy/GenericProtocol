@@ -5,7 +5,7 @@ namespace GenericProtocol.Implementation {
     public delegate void ConnectionContextHandler(
         IPEndPoint endPoint);
 
-    public delegate void ReceivedHandler<T>(
+    public delegate void ReceivedHandler<in T>(
         IPEndPoint senderEndPoint,
         T message);
 

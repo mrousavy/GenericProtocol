@@ -21,61 +21,65 @@ namespace GenericProtocol.Implementation {
         private IPEndPoint EndPoint { get; }
         private Socket Socket { get; }
         private IDictionary<IPEndPoint, Socket> Clients { get; }
+
         #endregion
 
         #region ctor
+
         /// <summary>
-        /// Create a new instance of the <see cref="ProtoServer{T}"/>
-        /// with the default <see cref="AddressFamily"/> and <see cref="SocketType"/>.
-        /// Use <see cref="Start"/> to bind and start the socket.
+        ///     Create a new instance of the <see cref="ProtoServer{T}" />
+        ///     with the default <see cref="AddressFamily" /> and <see cref="SocketType" />.
+        ///     Use <see cref="Start" /> to bind and start the socket.
         /// </summary>
-        /// <param name="address">The <see cref="IPAddress"/> to start this Protocol on</param>
+        /// <param name="address">The <see cref="IPAddress" /> to start this Protocol on</param>
         /// <param name="port">The Port to start this Protocol on</param>
         public ProtoServer(IPAddress address, int port) :
             this(address, port, AddressFamily.InterNetwork, SocketType.Stream) { }
 
         /// <summary>
-        /// Create a new instance of the <see cref="ProtoServer{T}"/>.
-        /// Use <see cref="Start"/> to bind and start the socket.
+        ///     Create a new instance of the <see cref="ProtoServer{T}" />.
+        ///     Use <see cref="Start" /> to bind and start the socket.
         /// </summary>
-        /// <param name="family">The <see cref="AddressFamily"/> 
-        /// this <see cref="System.Net.Sockets.Socket"/> should use</param>
-        /// <param name="type">The <see cref="SocketType"/> this 
-        /// <see cref="System.Net.Sockets.Socket"/> should use</param>
-        /// <param name="address">The <see cref="IPAddress"/> to start this Protocol on</param>
+        /// <param name="family">
+        ///     The <see cref="AddressFamily" />
+        ///     this <see cref="System.Net.Sockets.Socket" /> should use
+        /// </param>
+        /// <param name="type">
+        ///     The <see cref="SocketType" /> this
+        ///     <see cref="System.Net.Sockets.Socket" /> should use
+        /// </param>
+        /// <param name="address">The <see cref="IPAddress" /> to start this Protocol on</param>
         /// <param name="port">The Port to start this Protocol on</param>
         public ProtoServer(IPAddress address, int port, AddressFamily family, SocketType type) {
             Clients = new Dictionary<IPEndPoint, Socket>();
             EndPoint = new IPEndPoint(address, port);
             Socket = new Socket(family, type, ProtocolType.Tcp);
         }
+
         #endregion
 
         #region Functions
+
         /// <summary>
-        /// Bind and Start the Server to the set IP Address.
+        ///     Bind and Start the Server to the set IP Address.
         /// </summary>
         public void Start(bool seperateThread = false) {
             Socket.Bind(EndPoint);
 
-            if (seperateThread) { // Launch on a new Thread
-                new Thread(StartListening).Start();
-            } else { // Use Tasks
-                StartListening();
-            }
+            if (seperateThread) new Thread(StartListening).Start();
+            else StartListening();
         }
 
         /// <summary>
-        /// Shutdown the server and all active clients
+        ///     Shutdown the server and all active clients
         /// </summary>
         public void Stop() {
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Clients) {
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Clients)
                 try {
                     DisconnectClient(kvp.Value);
                 } catch {
                     // could not disconnect client
                 }
-            }
         }
 
         public async Task Send(T message, IPEndPoint to) {
@@ -99,12 +103,13 @@ namespace GenericProtocol.Implementation {
                 if (send > ReceiveBufferSize)
                     send = ReceiveBufferSize; // max size
 
-                var slice = segment.SliceEx(written, send); // buffered portion of array
+                ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
                 written = await socket.SendAsync(slice, SocketFlags.None);
             }
 
-            if (written < 1) throw new TransferException($"{written} bytes were sent! " +
-                                                         "Null bytes could mean a connection shutdown.");
+            if (written < 1)
+                throw new TransferException($"{written} bytes were sent! " +
+                                            "Null bytes could mean a connection shutdown.");
         }
 
         public async Task Broadcast(T message) {
@@ -118,6 +123,7 @@ namespace GenericProtocol.Implementation {
             Stop();
             Socket?.Dispose();
         }
+
         #endregion
 
         #region Privates
@@ -126,7 +132,7 @@ namespace GenericProtocol.Implementation {
         private async void StartListening() {
             Socket.Listen(10);
             // Loop theoretically infinetly
-            while (true) {
+            while (true)
                 try {
                     var client = await Socket.AcceptAsync(); // Block until accept
                     var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
@@ -140,8 +146,7 @@ namespace GenericProtocol.Implementation {
                     Console.WriteLine(ex.ErrorCode);
                     //return;
                 }
-                // Listen again after client connected
-            }
+            // Listen again after client connected
         }
 
         // Endless Start reading loop
@@ -149,7 +154,7 @@ namespace GenericProtocol.Implementation {
             var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
 
             // Loop theoretically infinetly
-            while (true) {
+            while (true)
                 try {
                     long size = await ReadLeading(client); // leading "byte"
 
@@ -162,12 +167,14 @@ namespace GenericProtocol.Implementation {
                         if (receive > ReceiveBufferSize)
                             receive = ReceiveBufferSize; // max size
 
-                        var slice = segment.SliceEx(read, (int)receive); // get buffered portion of array
+                        ArraySegment<byte>
+                            slice = segment.SliceEx(read, (int) receive); // get buffered portion of array
                         read += await client.ReceiveAsync(slice, SocketFlags.None);
                     }
 
-                    if (read < 1) throw new TransferException($"{read} bytes were read! " +
-                                                              "Null bytes could mean a connection shutdown.");
+                    if (read < 1)
+                        throw new TransferException($"{read} bytes were read! " +
+                                                    "Null bytes could mean a connection shutdown.");
 
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
@@ -183,8 +190,7 @@ namespace GenericProtocol.Implementation {
                     if (success) // Exit Reading loop once successfully disconnected
                         return;
                 }
-                // Listen again after client connected
-            }
+            // Listen again after client connected
         }
 
         // Keep a Client alive by pinging
@@ -204,8 +210,7 @@ namespace GenericProtocol.Implementation {
         // Disconnect a client; returns true if successful
         private bool DisconnectClient(Socket client) {
             KeyValuePair<IPEndPoint, Socket>[] filtered = Clients.Where(c => c.Value == client).ToArray();
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered) {
-
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered)
                 try {
                     kvp.Value.Disconnect(false); // Gracefully disconnect socket
                     kvp.Value.Close();
@@ -217,7 +222,6 @@ namespace GenericProtocol.Implementation {
                     // Socket is either already disconnected, or failing to disconnect. try ping
                     return !kvp.Value.Ping();
                 }
-            }
             return true;
         }
 
@@ -228,8 +232,9 @@ namespace GenericProtocol.Implementation {
             // read leading bytes
             int read = await client.ReceiveAsync(segment, SocketFlags.None);
 
-            if (read < 1) throw new TransferException($"{read} lead-bytes were read! " +
-                                                      "Null bytes could mean a connection shutdown.");
+            if (read < 1)
+                throw new TransferException($"{read} lead-bytes were read! " +
+                                            "Null bytes could mean a connection shutdown.");
 
             // size of the following byte[]
             long size = ZeroFormatterSerializer.Deserialize<long>(segment.Array);
@@ -244,9 +249,11 @@ namespace GenericProtocol.Implementation {
             // send leading bytes
             int sent = await client.SendAsync(segment, SocketFlags.None);
 
-            if (sent < 1) throw new TransferException($"{sent} lead-bytes were sent! " +
-                                                      "Null bytes could mean a connection shutdown.");
+            if (sent < 1)
+                throw new TransferException($"{sent} lead-bytes were sent! " +
+                                            "Null bytes could mean a connection shutdown.");
         }
+
         #endregion
     }
 }

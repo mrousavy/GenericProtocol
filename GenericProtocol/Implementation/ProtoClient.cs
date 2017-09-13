@@ -15,7 +15,7 @@ namespace GenericProtocol.Implementation {
         public event ConnectionContextHandler ConnectionLost;
 
         /// <summary>
-        /// Automatically reconnect to the Server on Connection interruptions
+        ///     Automatically reconnect to the Server on Connection interruptions
         /// </summary>
         public bool AutoReconnect { get; set; }
 
@@ -27,51 +27,61 @@ namespace GenericProtocol.Implementation {
         #region ctor
 
         /// <summary>
-        /// Create a new instance of the <see cref="ProtoClient{T}"/>
-        /// with the default <see cref="AddressFamily"/> and <see cref="SocketType"/>.
-        /// Use <see cref="Start"/> to start and connect the socket.
+        ///     Create a new instance of the <see cref="ProtoClient{T}" />
+        ///     with the default <see cref="AddressFamily" /> and <see cref="SocketType" />.
+        ///     Use <see cref="Start" /> to start and connect the socket.
         /// </summary>
-        /// <param name="address">The server's <see cref="IPAddress"/> to connect to</param>
+        /// <param name="address">The server's <see cref="IPAddress" /> to connect to</param>
         /// <param name="port">The server's Port to connect to</param>
         public ProtoClient(IPAddress address, int port) :
             this(address, port, AddressFamily.InterNetwork, SocketType.Stream) { }
 
         /// <summary>
-        /// Create a new instance of the <see cref="ProtoClient{T}"/>
-        /// Use <see cref="Start"/> to start and connect the socket.
+        ///     Create a new instance of the <see cref="ProtoClient{T}" />
+        ///     Use <see cref="Start" /> to start and connect the socket.
         /// </summary>
-        /// <param name="family">The <see cref="AddressFamily"/> 
-        /// this <see cref="System.Net.Sockets.Socket"/> should use</param>
-        /// <param name="type">The <see cref="SocketType"/> this 
-        /// <see cref="System.Net.Sockets.Socket"/> should use</param>
-        /// <param name="address">The server's <see cref="IPAddress"/> to connect to</param>
+        /// <param name="family">
+        ///     The <see cref="AddressFamily" />
+        ///     this <see cref="System.Net.Sockets.Socket" /> should use
+        /// </param>
+        /// <param name="type">
+        ///     The <see cref="SocketType" /> this
+        ///     <see cref="System.Net.Sockets.Socket" /> should use
+        /// </param>
+        /// <param name="address">The server's <see cref="IPAddress" /> to connect to</param>
         /// <param name="port">The server's Port to connect to</param>
         public ProtoClient(IPAddress address, int port, AddressFamily family, SocketType type) {
             EndPoint = new IPEndPoint(address, port);
             Socket = new Socket(family, type, ProtocolType.Tcp);
         }
+
         #endregion
 
         #region Functions
+
         /// <summary>
-        /// Start and Connect to the Server with the set IP Address.
+        ///     Start and Connect to the Server with the set IP Address.
         /// </summary>
-        /// <param name="seperateThread">True, if the <see cref="ProtoClient{T}"/>
-        /// should be operating on a seperate Thread.</param>
+        /// <param name="seperateThread">
+        ///     True, if the <see cref="ProtoClient{T}" />
+        ///     should be operating on a seperate Thread.
+        /// </param>
         public async Task Start(bool seperateThread = false) {
             await Socket.ConnectAsync(EndPoint);
 
-            if (seperateThread) { // Launch on a new Thread
+            if (seperateThread) {
+                // Launch on a new Thread
                 new Thread(StartReceiving).Start();
                 new Thread(KeepAlive).Start();
-            } else { // Use Tasks
+            } else {
+                // Use Tasks
                 StartReceiving();
                 KeepAlive();
             }
         }
 
         /// <summary>
-        /// Shutdown the server and all active clients
+        ///     Shutdown the server and all active clients
         /// </summary>
         public void Stop() {
             try {
@@ -103,12 +113,13 @@ namespace GenericProtocol.Implementation {
                     if (send > ReceiveBufferSize)
                         send = ReceiveBufferSize; // max size
 
-                    var slice = segment.SliceEx(written, send); // buffered portion of array
+                    ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
                     written = await Socket.SendAsync(slice, SocketFlags.None);
                 }
 
-                if (written < 1) throw new TransferException($"{written} bytes were sent! " +
-                                                             "Null bytes could mean a connection shutdown.");
+                if (written < 1)
+                    throw new TransferException($"{written} bytes were sent! " +
+                                                "Null bytes could mean a connection shutdown.");
             } catch {
                 if (!AutoReconnect) throw; // Throw Exception if Socket should not Auto-reconnect
             }
@@ -117,13 +128,15 @@ namespace GenericProtocol.Implementation {
         public void Dispose() {
             Stop();
         }
+
         #endregion
 
         #region Privates
+
         // Endless Start reading loop
         private async void StartReceiving() {
             // Loop theoretically infinetly
-            while (true) {
+            while (true)
                 try {
                     // Read the leading "byte"
                     long size = await ReadLeading();
@@ -137,20 +150,20 @@ namespace GenericProtocol.Implementation {
                         if (receive > ReceiveBufferSize)
                             receive = ReceiveBufferSize; // max size
 
-                        var slice = segment.SliceEx(read, (int)receive); // get buffered portion of array
+                        ArraySegment<byte>
+                            slice = segment.SliceEx(read, (int) receive); // get buffered portion of array
                         read += await Socket.ReceiveAsync(slice, SocketFlags.None);
                     }
 
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
                     ReceivedMessage?.Invoke(EndPoint, message); // call event
-                }  catch (ObjectDisposedException) {
+                } catch (ObjectDisposedException) {
                     return; // Socket was closed & disposed -> exit
                 } catch {
                     if (!AutoReconnect) throw; // Throw Exception if Socket should not Auto-reconnect
                 }
-                // Listen again after client connected
-            }
+            // Listen again after client connected
         }
 
         // Read the prefix from a message (number of following bytes)
@@ -160,8 +173,9 @@ namespace GenericProtocol.Implementation {
             // read leading bytes
             int read = await Socket.ReceiveAsync(segment, SocketFlags.None);
 
-            if (read < 1) throw new TransferException($"{read} lead-bytes were read! " +
-                                                      "Null bytes could mean a connection shutdown.");
+            if (read < 1)
+                throw new TransferException($"{read} lead-bytes were read! " +
+                                            "Null bytes could mean a connection shutdown.");
 
             // size of the following byte[]
             long size = ZeroFormatterSerializer.Deserialize<long>(segment.Array);
@@ -176,8 +190,9 @@ namespace GenericProtocol.Implementation {
             // send leading bytes
             int sent = await Socket.SendAsync(segment, SocketFlags.None);
 
-            if (sent < 1) throw new TransferException($"{sent} lead-bytes were sent! " +
-                                                      "Null bytes could mean a connection shutdown.");
+            if (sent < 1)
+                throw new TransferException($"{sent} lead-bytes were sent! " +
+                                            "Null bytes could mean a connection shutdown.");
         }
 
         // Reconnect the Socket connection
@@ -196,14 +211,12 @@ namespace GenericProtocol.Implementation {
 
                 ConnectionLost?.Invoke(EndPoint);
                 // Client does not respond, try reconnecting, or disconnect & exit
-                if (AutoReconnect) {
-                    await Reconnect();
-                } else {
-                    Stop();
-                }
+                if (AutoReconnect) await Reconnect();
+                else Stop();
                 return;
             }
         }
+
         #endregion
     }
 }
