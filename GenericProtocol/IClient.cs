@@ -14,6 +14,8 @@ namespace GenericProtocol {
     public interface IClient<T> : IDisposable {
         event ReceivedHandler<T> ReceivedMessage;
 
+        bool AutoReconnect { get; set; }
+
         /// <summary>
         /// Connect the Socket to the set IP Address
         /// and start receiving messages

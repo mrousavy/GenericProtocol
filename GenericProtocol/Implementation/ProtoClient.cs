@@ -9,8 +9,9 @@ namespace GenericProtocol.Implementation {
         #region Properties
 
         public int ReceiveBufferSize = Constants.ReceiveBufferSize;
-        
+
         public event ReceivedHandler<T> ReceivedMessage;
+        public event ConnectionContextHandler ConnectionLost;
 
         /// <summary>
         /// Automatically reconnect to the Server on Connection interruptions
@@ -55,6 +56,7 @@ namespace GenericProtocol.Implementation {
         public async Task Start() {
             await Socket.ConnectAsync(EndPoint);
             StartReceiving();
+            KeepAlive();
         }
 
         // Endless Start reading loop
@@ -84,13 +86,42 @@ namespace GenericProtocol.Implementation {
             Socket.Close();
             Socket.Dispose();
         }
+        
+        // Reconnect the Socket connection
+        private async Task Reconnect() {
+            Socket.Disconnect(true);
+            await Start();
+        }
 
         public async Task Send(T message) {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
-            byte[] bytes = ZeroFormatterSerializer.Serialize(message);
-            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
-            int written = await Socket.SendAsync(segment, SocketFlags.None);
+            try {
+                byte[] bytes = ZeroFormatterSerializer.Serialize(message);
+                ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+                int written = await Socket.SendAsync(segment, SocketFlags.None);
+            } catch (SocketException ex) {
+                Console.WriteLine(ex.ErrorCode);
+            }
+        }
+
+
+        private async void KeepAlive() {
+            while (true) {
+                await Task.Delay(Constants.PingDelay);
+
+                bool isAlive = Socket.Ping();
+                if (isAlive) continue; // Client responded
+
+                ConnectionLost?.Invoke(EndPoint);
+                // Client does not respond, try reconnecting, or disconnect & exit
+                if (AutoReconnect) {
+                    await Reconnect();
+                } else {
+                    Stop();
+                }
+                return;
+            }
         }
 
         public void Dispose() {
