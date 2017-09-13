@@ -52,6 +52,7 @@ namespace GenericProtocol.Implementation {
         }
         #endregion
 
+        #region Functions
         /// <summary>
         /// Start and Connect to the Server with the set IP Address.
         /// </summary>
@@ -69,6 +70,48 @@ namespace GenericProtocol.Implementation {
             }
         }
 
+        /// <summary>
+        /// Shutdown the server and all active clients
+        /// </summary>
+        public void Stop() {
+            Socket.Disconnect(false);
+            Socket.Close();
+            Socket.Dispose();
+        }
+
+        public async Task Send(T message) {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+
+            try {
+                // build byte[] out of message (serialize with ZeroFormatter)
+                byte[] bytes = ZeroFormatterSerializer.Serialize(message);
+                ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+
+                int size = bytes.Length;
+                await SendLeading(size); // Send receiver the byte count
+
+                int written = 0;
+                while (written < size) {
+                    int send = size - written; // current buffer size
+                    if (send > ReceiveBufferSize)
+                        send = ReceiveBufferSize; // max size
+
+                    var slice = segment.Slice(written, send); // buffered portion of array
+                    written = await Socket.SendAsync(slice, SocketFlags.None);
+                }
+
+                if (written < 1) throw new TransferException($"{written} bytes were sent!");
+            } catch (SocketException ex) {
+                Console.WriteLine(ex.ErrorCode);
+            }
+        }
+
+        public void Dispose() {
+            Stop();
+        }
+        #endregion
+
+        #region Privates
         // Endless Start reading loop
         private async void StartReceiving() {
             // Loop theoretically infinetly
@@ -125,49 +168,13 @@ namespace GenericProtocol.Implementation {
             if (sent < 1) throw new TransferException($"{sent} lead-bytes were sent!");
         }
 
-        /// <summary>
-        /// Shutdown the server and all active clients
-        /// </summary>
-        public void Stop() {
-            Socket.Disconnect(false);
-            Socket.Close();
-            Socket.Dispose();
-        }
-
         // Reconnect the Socket connection
         private async Task Reconnect() {
             Socket.Disconnect(true);
             await Start();
         }
 
-        public async Task Send(T message) {
-            if (message == null) throw new ArgumentNullException(nameof(message));
-
-            try {
-                // build byte[] out of message (serialize with ZeroFormatter)
-                byte[] bytes = ZeroFormatterSerializer.Serialize(message);
-                ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
-
-                int size = bytes.Length;
-                await SendLeading(size); // Send receiver the byte count
-
-                int written = 0;
-                while (written < size) {
-                    int send = size - written; // current buffer size
-                    if (send > ReceiveBufferSize)
-                        send = ReceiveBufferSize; // max size
-
-                    var slice = segment.Slice(written, send); // buffered portion of array
-                    written = await Socket.SendAsync(slice, SocketFlags.None);
-                }
-
-                if (written < 1) throw new TransferException($"{written} bytes were sent!");
-            } catch (SocketException ex) {
-                Console.WriteLine(ex.ErrorCode);
-            }
-        }
-
-
+        // Keep server connection alive by pinging
         private async void KeepAlive() {
             while (true) {
                 await Task.Delay(Constants.PingDelay);
@@ -185,9 +192,6 @@ namespace GenericProtocol.Implementation {
                 return;
             }
         }
-
-        public void Dispose() {
-            Stop();
-        }
+        #endregion
     }
 }
