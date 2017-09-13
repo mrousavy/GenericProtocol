@@ -96,7 +96,7 @@ namespace GenericProtocol.Implementation {
                     if (send > ReceiveBufferSize)
                         send = ReceiveBufferSize; // max size
 
-                    var slice = segment.Slice(written, send); // buffered portion of array
+                    var slice = segment.SliceEx(written, send); // buffered portion of array
                     written = await Socket.SendAsync(slice, SocketFlags.None);
                 }
 
@@ -129,7 +129,7 @@ namespace GenericProtocol.Implementation {
                         if (receive > ReceiveBufferSize)
                             receive = ReceiveBufferSize; // max size
 
-                        var slice = segment.Slice(read, receive); // get buffered portion of array
+                        var slice = segment.SliceEx(read, receive); // get buffered portion of array
                         read += await Socket.ReceiveAsync(slice, SocketFlags.None);
                     }
 
@@ -138,6 +138,8 @@ namespace GenericProtocol.Implementation {
                     ReceivedMessage?.Invoke(EndPoint, message); // call event
                 } catch (SocketException ex) {
                     Console.WriteLine(ex.ErrorCode);
+                } catch (ObjectDisposedException) {
+                    return; // Socket was closed & disposed -> exit
                 }
                 // Listen again after client connected
             }

@@ -99,7 +99,7 @@ namespace GenericProtocol.Implementation {
                 if (send > ReceiveBufferSize)
                     send = ReceiveBufferSize; // max size
 
-                var slice = segment.Slice(written, send); // buffered portion of array
+                var slice = segment.SliceEx(written, send); // buffered portion of array
                 written = await socket.SendAsync(slice, SocketFlags.None);
             }
 
@@ -161,8 +161,8 @@ namespace GenericProtocol.Implementation {
                         if (receive > ReceiveBufferSize)
                             receive = ReceiveBufferSize; // max size
 
-                        var slice = segment.Slice(read, receive); // get buffered portion of array
-                        read += await Socket.ReceiveAsync(slice, SocketFlags.None);
+                        var slice = segment.SliceEx(read, receive); // get buffered portion of array
+                        read += await client.ReceiveAsync(slice, SocketFlags.None);
                     }
 
                     if (read < 1) throw new TransferException($"{read} bytes were read!");
@@ -175,6 +175,11 @@ namespace GenericProtocol.Implementation {
                     bool success = DisconnectClient(client); // try to disconnect
                     if (success) // Exit Reading loop once successfully disconnected
                         return;
+                } catch (TransferException) {
+                    // 0 read bytes, probably null byte?
+                    bool success = DisconnectClient(client); // try to disconnect
+                    if (success) // Exit Reading loop once successfully disconnected
+                        throw;
                 }
                 // Listen again after client connected
             }
@@ -196,7 +201,7 @@ namespace GenericProtocol.Implementation {
 
         // Disconnect a client; returns true if successful
         private bool DisconnectClient(Socket client) {
-            IEnumerable<KeyValuePair<IPEndPoint, Socket>> filtered = Clients.Where(c => c.Value == client);
+            KeyValuePair<IPEndPoint, Socket>[] filtered = Clients.Where(c => c.Value == client).ToArray();
             foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered) {
                 try {
                     kvp.Value.Disconnect(false); // Gracefully disconnect socket
