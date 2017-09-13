@@ -13,8 +13,30 @@ namespace GenericProtocol {
     ///     (has to be ZeroFormatter marked, see: <see href="https://github.com/neuecc/ZeroFormatter" />)
     /// </typeparam>
     public interface IClient<T> : IDisposable {
+        /// <summary>
+        ///     Indicating whether this <see cref="IClient{T}"/>
+        ///     should automatically reconnect to the <see cref="IServer{T}"/>
+        ///     once a connection is lost
+        /// </summary>
         bool AutoReconnect { get; set; }
+        /// <summary>
+        ///     The size of receive buffers (should be equal or 
+        ///     less than bandwidth)
+        /// </summary>
+        int ReceiveBufferSize { get; set; }
+        /// <summary>
+        ///     The size of send buffers (should be equal or 
+        ///     less than bandwidth)
+        /// </summary>
+        int SendBufferSize { get; set; }
+        /// <summary>
+        ///     Event for received messages
+        /// </summary>
         event ReceivedHandler<T> ReceivedMessage;
+        /// <summary>
+        ///     Event on connection to server loss
+        /// </summary>
+        event ConnectionContextHandler ConnectionLost;
 
         /// <summary>
         ///     Connect the Socket to the set IP Address

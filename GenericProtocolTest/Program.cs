@@ -44,7 +44,7 @@ namespace GenericProtocolTest {
         private static void SendToClients(string message) { _server?.Broadcast(message); }
 
         private static void Client_ConnectionLost(IPEndPoint endPoint) {
-            Console.WriteLine(endPoint.Address);
+            Console.WriteLine($"Connection lost! {endPoint.Address}");
         }
 
         private static void StartServer() {
@@ -56,8 +56,9 @@ namespace GenericProtocolTest {
             _server.ReceivedMessage += ServerMessageReceived;
         }
 
-        private static void ServerMessageReceived(IPEndPoint sender, string message) {
+        private static async void ServerMessageReceived(IPEndPoint sender, string message) {
             Console.WriteLine($"{sender}: {message}");
+            await _server.Send($"Hello {sender}!", sender);
         }
         private static void ClientMessageReceived(IPEndPoint sender, string message) {
             Console.WriteLine($"{sender}: {message}");

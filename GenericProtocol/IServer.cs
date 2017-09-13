@@ -15,8 +15,17 @@ namespace GenericProtocol {
     ///     (has to be ZeroFormatter marked, see: <see href="https://github.com/neuecc/ZeroFormatter" />)
     /// </typeparam>
     public interface IServer<T> : IDisposable {
+        /// <summary>
+        ///     Event for just connected clients
+        /// </summary>
         event ConnectionContextHandler ClientConnected;
+        /// <summary>
+        ///     Event for just disconnected clients
+        /// </summary>
         event ConnectionContextHandler ClientDisconnected;
+        /// <summary>
+        ///     Event for received messages
+        /// </summary>
         event ReceivedHandler<T> ReceivedMessage;
 
         /// <summary>

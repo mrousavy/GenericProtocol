@@ -6,36 +6,35 @@ using System.Threading.Tasks;
 using ZeroFormatter;
 
 namespace GenericProtocol.Implementation {
-    public class ProtoClient<T> : IClient<T> {
+    /// <summary>
+    ///     A protocol for transferring large binary data (BLOBs) like images or files.
+    /// </summary>
+    public class BinaryUplink : IClient<byte[]> {
         #region Properties
-
-        public int ReceiveBufferSize { get; set; }= Constants.ReceiveBufferSize;
-        public int SendBufferSize { get; set; } = Constants.SendBufferSize;
-
-        public event ReceivedHandler<T> ReceivedMessage;
-        public event ConnectionContextHandler ConnectionLost;
-
-        public bool AutoReconnect { get; set; }
-
+        public int ReceiveBufferSize { get; set; } = Constants.ReceiveBufferSize;
+        public int SendBufferSize { get; set; }= Constants.SendBufferSize;
         private IPEndPoint EndPoint { get; }
         private Socket Socket { get; }
+        public bool AutoReconnect { get; set; }
+        public event ReceivedHandler<byte[]> ReceivedMessage;
+        public event ConnectionContextHandler ConnectionLost;
 
         #endregion
 
         #region ctor
-
         /// <summary>
-        ///     Create a new instance of the <see cref="ProtoClient{T}" />
+        ///     Create a new instance of the <see cref="BinaryUplink" />
         ///     with the default <see cref="AddressFamily" /> and <see cref="SocketType" />.
         ///     Use <see cref="Start" /> to start and connect the socket.
         /// </summary>
         /// <param name="address">The server's <see cref="IPAddress" /> to connect to</param>
         /// <param name="port">The server's Port to connect to</param>
-        public ProtoClient(IPAddress address, int port) :
+        public BinaryUplink(IPAddress address, int port) :
             this(address, port, AddressFamily.InterNetwork, SocketType.Stream) { }
 
         /// <summary>
-        ///     Create a new instance of the <see cref="ProtoClient{T}" />
+        ///     Create a new instance of the <see cref="BinaryUplink" />
+        ///     with the default <see cref="AddressFamily" /> and <see cref="SocketType" />.
         ///     Use <see cref="Start" /> to start and connect the socket.
         /// </summary>
         /// <param name="family">
@@ -48,15 +47,14 @@ namespace GenericProtocol.Implementation {
         /// </param>
         /// <param name="address">The server's <see cref="IPAddress" /> to connect to</param>
         /// <param name="port">The server's Port to connect to</param>
-        public ProtoClient(IPAddress address, int port, AddressFamily family, SocketType type) {
+        public BinaryUplink(IPAddress address, int port, AddressFamily family, SocketType type) {
             EndPoint = new IPEndPoint(address, port);
             Socket = new Socket(family, type, ProtocolType.Tcp);
         }
-
         #endregion
 
         #region Functions
-        
+
         public async Task Start(bool seperateThread = false) {
             await Socket.ConnectAsync(EndPoint);
 
@@ -70,7 +68,7 @@ namespace GenericProtocol.Implementation {
                 KeepAlive();
             }
         }
-        
+
         public void Stop() {
             try {
                 Socket?.Disconnect(false);
@@ -81,7 +79,7 @@ namespace GenericProtocol.Implementation {
             }
         }
 
-        public async Task Send(T message) {
+        public async Task Send(byte[] message) {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
             bool alive = Socket.Ping();
@@ -89,17 +87,16 @@ namespace GenericProtocol.Implementation {
 
             try {
                 // build byte[] out of message (serialize with ZeroFormatter)
-                byte[] bytes = ZeroFormatterSerializer.Serialize(message);
-                ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+                ArraySegment<byte> segment = new ArraySegment<byte>(message);
 
-                int size = bytes.Length;
+                int size = message.Length;
                 await SendLeading(size); // Send receiver the byte count
 
                 int written = 0;
                 while (written < size) {
                     int send = size - written; // current buffer size
-                    if (send > SendBufferSize)
-                        send = SendBufferSize; // max size
+                    if (send > ReceiveBufferSize)
+                        send = ReceiveBufferSize; // max size
 
                     ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
                     written = await Socket.SendAsync(slice, SocketFlags.None);
@@ -144,9 +141,7 @@ namespace GenericProtocol.Implementation {
                         read += await Socket.ReceiveAsync(slice, SocketFlags.None);
                     }
 
-                    var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
-
-                    ReceivedMessage?.Invoke(EndPoint, message); // call event
+                    ReceivedMessage?.Invoke(EndPoint, segment.Array); // call event
                 } catch (ObjectDisposedException) {
                     return; // Socket was closed & disposed -> exit
                 } catch {
