@@ -1,5 +1,10 @@
 <p align="center">
-  <h1 align="center">Generic Protocol</h1>
+  <h1 align="center">
+  <code class="rich-diff-level-one">&lt;T&gt;</code>
+  <kbd>&lt;T&gt;</kbd>
+    <br/>
+    Generic Protocol
+  </h1>
 
   <blockquote align="center">A fast TCP event based buffered server/client protocol for transferring data over the network in .NET Core/Classic</blockquote>
 
