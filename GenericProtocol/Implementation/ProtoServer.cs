@@ -161,19 +161,25 @@ namespace GenericProtocol.Implementation {
         public async Task Send(T message, IPEndPoint to) {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
+            // Build a byte array of the serialized data
             byte[] bytes = ZeroFormatterSerializer.Serialize(message);
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
 
+            // Find socket
             var socket = Clients.FirstOrDefault(c => c.Key.Equals(to)).Value;
             if (socket == null) throw new Exception($"The IP Address {to} could not be found!");
 
+            // Send data
             int sent = await socket.SendAsync(segment, SocketFlags.None);
 
             if (sent < 1) throw new TransferException($"{sent} bytes were sent!");
         }
 
-        public Task Broadcast(T message) {
-            throw new NotImplementedException();
+        public async Task Broadcast(T message) {
+            // Build list of Send(..) tasks
+            List<Task> tasks = Clients.Select(client => Send(message, client.Key)).ToList();
+            // await all
+            await Task.WhenAll(tasks);
         }
 
         public void Dispose() {

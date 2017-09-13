@@ -78,6 +78,8 @@ namespace GenericProtocol.Implementation {
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
                     int read = await Socket.ReceiveAsync(segment, SocketFlags.None);
 
+                    if (read < 1) throw new TransferException($"{read} bytes were read!");
+
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
                     ReceivedMessage?.Invoke(EndPoint, message); // call event
@@ -110,6 +112,8 @@ namespace GenericProtocol.Implementation {
                 byte[] bytes = ZeroFormatterSerializer.Serialize(message);
                 ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
                 int written = await Socket.SendAsync(segment, SocketFlags.None);
+
+                if (written < 1) throw new TransferException($"{written} bytes were sent!");
             } catch (SocketException ex) {
                 Console.WriteLine(ex.ErrorCode);
             }
