@@ -1,7 +1,8 @@
+
+<kbd align="center">
 <p align="center">
   <h1 align="center">
-  <code class="rich-diff-level-one">&lt;T&gt;</code>
-  <kbd>&lt;T&gt;</kbd>
+    <code class="rich-diff-level-one">&lt;T&gt;</code>
     <br/>
     Generic Protocol
   </h1>
@@ -14,3 +15,4 @@
     </a>
   </p>
 </p>
+</kbd>
