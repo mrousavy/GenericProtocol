@@ -51,6 +51,7 @@ namespace GenericProtocol.Implementation {
         }
         #endregion
 
+        #region Functions
         /// <summary>
         /// Bind and Start the Server to the set IP Address.
         /// </summary>
@@ -63,6 +64,62 @@ namespace GenericProtocol.Implementation {
                 StartListening();
             }
         }
+
+        /// <summary>
+        /// Shutdown the server and all active clients
+        /// </summary>
+        public void Stop() {
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Clients) {
+                try {
+                    DisconnectClient(kvp.Value);
+                } catch {
+                    // could not disconnect client
+                }
+            }
+        }
+
+        public async Task Send(T message, IPEndPoint to) {
+            if (message == null) throw new ArgumentNullException(nameof(message));
+
+            // Build a byte array of the serialized data
+            byte[] bytes = ZeroFormatterSerializer.Serialize(message);
+            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+
+            // Find socket
+            var socket = Clients.FirstOrDefault(c => c.Key.Equals(to)).Value;
+            if (socket == null) throw new Exception($"The IP Address {to} could not be found!");
+
+            int size = bytes.Length;
+            await SendLeading(size, socket); // send leading size
+
+            // Write buffered
+            int written = 0;
+            while (written < size) {
+                int send = size - written; // current buffer size
+                if (send > ReceiveBufferSize)
+                    send = ReceiveBufferSize; // max size
+
+                var slice = segment.Slice(written, send); // buffered portion of array
+                written = await socket.SendAsync(slice, SocketFlags.None);
+            }
+
+            if (written < 1) throw new TransferException($"{written} bytes were sent!");
+        }
+
+        public async Task Broadcast(T message) {
+            // Build list of Send(..) tasks
+            List<Task> tasks = Clients.Select(client => Send(message, client.Key)).ToList();
+            // await all
+            await Task.WhenAll(tasks);
+        }
+
+        public void Dispose() {
+            Stop();
+            Socket?.Dispose();
+        }
+        #endregion
+
+        #region Privates
 
         // Endless Start listening loop
         private async void StartListening() {
@@ -93,6 +150,8 @@ namespace GenericProtocol.Implementation {
             // Loop theoretically infinetly
             while (true) {
                 try {
+                    int size = await ReadLeading(client); // leading "byte"
+
                     byte[] bytes = new byte[ReceiveBufferSize];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
                     int read = await client.ReceiveAsync(segment, SocketFlags.None);
@@ -145,46 +204,30 @@ namespace GenericProtocol.Implementation {
             return true;
         }
 
-        /// <summary>
-        /// Shutdown the server and all active clients
-        /// </summary>
-        public void Stop() {
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Clients) {
-                try {
-                    DisconnectClient(kvp.Value);
-                } catch {
-                    // could not disconnect client
-                }
-            }
-        }
-
-        public async Task Send(T message, IPEndPoint to) {
-            if (message == null) throw new ArgumentNullException(nameof(message));
-
-            // Build a byte array of the serialized data
-            byte[] bytes = ZeroFormatterSerializer.Serialize(message);
+        // Read the prefix from a message (number of following bytes)
+        private async Task<int> ReadLeading(Socket client) {
+            byte[] bytes = new byte[sizeof(int)];
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+            // read leading bytes
+            int read = await client.ReceiveAsync(segment, SocketFlags.None);
 
-            // Find socket
-            var socket = Clients.FirstOrDefault(c => c.Key.Equals(to)).Value;
-            if (socket == null) throw new Exception($"The IP Address {to} could not be found!");
+            if (read < 1) throw new TransferException($"{read} lead-bytes were read!");
 
-            // Send data
-            int sent = await socket.SendAsync(segment, SocketFlags.None);
-
-            if (sent < 1) throw new TransferException($"{sent} bytes were sent!");
+            // size of the following byte[]
+            int size = ZeroFormatterSerializer.Deserialize<int>(segment.Array);
+            return size;
         }
 
-        public async Task Broadcast(T message) {
-            // Build list of Send(..) tasks
-            List<Task> tasks = Clients.Select(client => Send(message, client.Key)).ToList();
-            // await all
-            await Task.WhenAll(tasks);
-        }
+        // Send the prefix from a message (number of following bytes)
+        private async Task SendLeading(int size, Socket client) {
+            // build byte[] out of size
+            byte[] bytes = ZeroFormatterSerializer.Serialize(size);
+            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+            // send leading bytes
+            int sent = await client.SendAsync(segment, SocketFlags.None);
 
-        public void Dispose() {
-            Stop();
-            Socket?.Dispose();
+            if (sent < 1) throw new TransferException($"{sent} lead-bytes were sent!");
         }
+        #endregion
     }
 }
