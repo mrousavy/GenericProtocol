@@ -5,17 +5,28 @@
     Generic Protocol
   </h1>
 
-  <blockquote align="center">A fast TCP event based buffered server/client protocol for transferring data over the network in .NET Core/Classic</blockquote>
+  <blockquote align="center">⚡️ A fast TCP event based buffered server/client protocol for transferring data over the (inter)net in .NET Core/Classic 🌐</blockquote>
 
   <p align="center">
     <a href="https://ci.appveyor.com/project/mrousavy/genericprotocol">
       <img src="https://ci.appveyor.com/api/projects/status/vlgt97f4bpgci6pj?svg=true">
     </a>
+	<a href="https://www.nuget.org/packages/GenericProtocol"/>
+		<img src="https://img.shields.io/nuget/v/GenericProtocol.svg">
+	</a>
   </p>
 <p/>
 
 ## Why?
 > Sending whole objects over the net was never easier
+
+1. Send **any** .NET `object` 
+(See: [supported](https://github.com/neuecc/ZeroFormatter#built-in-support-types), [custom](https://github.com/neuecc/ZeroFormatter#quick-start)) :package:
+2. Send/Receive **faster** by **buffered send/receive** and **ZeroFormatter**'s **fast (de-)serializing** :dash:
+3. Automatically **correct errors** with **TCP** and **Auto-reconnect** :white_check_mark:
+4. Event based :zap:
+5. **Async**
+6. Made with love :heart:
 
 Sending objects:
 ```csharp
@@ -30,7 +41,7 @@ private void MyMessageReceivedCallback(SomeObject someObject) {
 ```
 
 ## How?
-Add **GenericProtocol** to your existing **.NET**/**.NET Core 2.0+**/**.NET Standard 2.0+** Project:
+Add **GenericProtocol** to your existing **.NET**/**.NET Core 2.0+**/**.NET Standard 2.0+** Project via **NuGet**:
 ```
 PM> Install-Package GenericProtocol
 ```
