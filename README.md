@@ -30,6 +30,7 @@ Are you [connecting to a server](#client), or are you [a server](#server)?
 
 ## Client
 Connect to a [server](#server):
+<div align="left"></div>
 ```csharp
 // 1. Factory
 IClient client = await Factory.StartNewClient<string>("82.205.121.132", 1024, true);
