@@ -14,7 +14,22 @@
   </p>
 <div/>
 
-## Usage
+## Why?
+> Sending whole objects over the net was never easier
+
+Sending objects:
+```csharp
+client.Send(someObject);
+```
+
+...on the other end:
+```csharp
+private void MyMessageReceivedCallback(SomeObject someObject) {
+  Console.WriteLine("I've received an object!");
+}
+```
+
+## How?
 Add **GenericProtocol** to your existing **.NET**/**.NET Core 2.0+**/**.NET Standard 2.0+** Project:
 ```
 PM> Install-Package GenericProtocol
@@ -25,21 +40,19 @@ Use the default namespace:
 using GenericProtocol;
 ```
 
-Are you [connecting to a server](#client), or are you [a server](#server)?
+Are you [connecting to a server](#client), or **are you** [the server](#server)?
 
 
 ## Client
 Connect to a [server](#server):
 ```csharp
-// 1. Factory
 IClient client = await Factory.StartNewClient<string>("82.205.121.132", 1024, true);
-// OR
-// 2. Manually
-IClient client = new ProtoClient<string>(IPAddress.Parse("82.205.121.132"), 1024)
-await client.Connect(true);
 ```
+The Factory will construct and connect a new `IClient<T>` object, where `<T>` is the object
+you want to send over the net. This can be ([supported](https://github.com/neuecc/ZeroFormatter#built-in-support-types))
+built in types, or custom types marked with `[ZeroFormattable]` (see [here](https://github.com/neuecc/ZeroFormatter#quick-start))
 
-Send/Receive simple strings:
+Send/Receive your objects (`string` in this example):
 ```csharp
 // Attach to the Message Received event
 client.ReceivedMessage += MyMessageReceivedCallback; // void MyCallback(string)
@@ -48,9 +61,11 @@ client.ReceivedMessage += MyMessageReceivedCallback; // void MyCallback(string)
 await client.Send("Hello server!");
 ```
 
-Send/Receive objects:
+Send/Receive custom objects:
 ```csharp
+//////////////////////
 // MessageObject.cs //
+//////////////////////
 [ZeroFormattable]
 public struct MessageObject {
   [Index(0)]
@@ -63,12 +78,12 @@ public struct MessageObject {
   public DateTime Timestamp { get; set; }
 }
 
-// Main.cs //
+//////////////////////
+//     Main.cs      //
+//////////////////////
 IClient client = await Factory.StartNewClient<MessageObject>("82.205.121.132", 1024);
-// Attach to the Message Received event
 client.ReceivedMessage += MyMessageReceivedCallback; // void MyCallback(MessageObject)
 
-// Send a message to the Server
 var msgObject = new MessageObject() {
   Sender = "mrousavy",
   Recipient = "cbarosch",
@@ -76,7 +91,7 @@ var msgObject = new MessageObject() {
   Timestamp = DateTime.Now
 }
 await client.Send(msgObject);
-// (Configure your Server so that it should redirect to the Recipient)
+// (Optionally configure your Server so that it should redirect to the Recipient)
 ```
 
 ## Server
