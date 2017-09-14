@@ -1,4 +1,4 @@
-<div align="center">
+<p align="center">
   <h1 align="center">
     <code class="rich-diff-level-one">&lt;T&gt;</code>
     <br/>
@@ -12,7 +12,7 @@
       <img src="https://ci.appveyor.com/api/projects/status/vlgt97f4bpgci6pj?svg=true">
     </a>
   </p>
-<div/>
+<p/>
 
 ## Why?
 > Sending whole objects over the net was never easier
