@@ -9,6 +9,30 @@ namespace GenericProtocol.Implementation {
         IPEndPoint senderEndPoint,
         T message);
 
+    /// <summary>
+    /// The status of a Connection
+    /// </summary>
+    public enum ConnectionStatus {
+        /// <summary>
+        /// Indicating that the <see cref="IClient{T}"/>
+        /// or <see cref="IServer{T}"/> is currently
+        /// disconnected
+        /// </summary>
+        Disconnected = 0,
+        /// <summary>
+        /// Indicating that the <see cref="IClient{T}"/>
+        /// or <see cref="IServer{T}"/> is currently
+        /// trying to (re-)connect
+        /// </summary>
+        Connecting = 1,
+        /// <summary>
+        /// Indicating that the <see cref="IClient{T}"/>
+        /// or <see cref="IServer{T}"/> is currently
+        /// bound and connected
+        /// </summary>
+        Connected = 2
+    }
+
     public static class Constants {
         public const int ReceiveBufferSize = 1024; // Byte buffer size for receiving data
         public const int SendBufferSize = 1024; // Byte buffer size for sending data

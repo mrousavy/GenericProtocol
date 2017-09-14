@@ -6,9 +6,9 @@ namespace GenericProtocolTest {
     public class Program {
         private static ProtoServer<string> _server;
         private static ProtoClient<string> _client;
-        private static bool TestServer = true;
+        private static bool TestServer = false;
         private static bool TestClient = true;
-
+        private static readonly IPAddress ServerIp = IPAddress.Parse("10.0.105.1");
 
         private static void Main(string[] args) {
             if (TestServer)
@@ -32,7 +32,8 @@ namespace GenericProtocolTest {
 
 
         private static void StartClient() {
-            _client = new ProtoClient<string>(IPAddress.Parse("127.0.0.1"), 1024);
+            _client = new ProtoClient<string>(ServerIp, 1024);
+            _client.AutoReconnect = true;
             _client.Connect().GetAwaiter().GetResult();
             _client.ReceivedMessage += ClientMessageReceived;
             _client.ConnectionLost += Client_ConnectionLost;

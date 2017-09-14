@@ -30,6 +30,10 @@ namespace GenericProtocol {
         /// </summary>
         int SendBufferSize { get; set; }
         /// <summary>
+        ///     Represents the current status of the Connection
+        /// </summary>
+        ConnectionStatus ConnectionStatus { get; set; }
+        /// <summary>
         ///     Event for received messages
         /// </summary>
         event ReceivedHandler<T> ReceivedMessage;

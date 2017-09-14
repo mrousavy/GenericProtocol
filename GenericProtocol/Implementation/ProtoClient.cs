@@ -9,16 +9,17 @@ namespace GenericProtocol.Implementation {
     public class ProtoClient<T> : IClient<T> {
         #region Properties
 
-        public int ReceiveBufferSize { get; set; }= Constants.ReceiveBufferSize;
+        public int ReceiveBufferSize { get; set; } = Constants.ReceiveBufferSize;
         public int SendBufferSize { get; set; } = Constants.SendBufferSize;
+        public ConnectionStatus ConnectionStatus { get; set; } // Status of connection
 
         public event ReceivedHandler<T> ReceivedMessage;
         public event ConnectionContextHandler ConnectionLost;
 
         public bool AutoReconnect { get; set; }
 
-        private IPEndPoint EndPoint { get; }
-        private Socket Socket { get; }
+        private IPEndPoint EndPoint { get; } // Server (remote) EndPoint
+        private Socket Socket { get; } // Actual underlying socket
 
         #endregion
 
@@ -56,9 +57,12 @@ namespace GenericProtocol.Implementation {
         #endregion
 
         #region Functions
-        
+
         public async Task Connect(bool seperateThread = false) {
+            if (ConnectionStatus == ConnectionStatus.Connected) throw new Exception("Already connected!");
+
             await Socket.ConnectAsync(EndPoint);
+            ConnectionStatus = ConnectionStatus.Connected;
 
             if (seperateThread) {
                 // Launch on a new Thread
@@ -70,10 +74,11 @@ namespace GenericProtocol.Implementation {
                 KeepAlive();
             }
         }
-        
+
         public void Disconnect() {
             try {
                 Socket?.Disconnect(false);
+                ConnectionStatus = ConnectionStatus.Disconnected;
                 Socket?.Close();
                 Socket?.Dispose();
             } catch (ObjectDisposedException) {
@@ -108,15 +113,16 @@ namespace GenericProtocol.Implementation {
                 if (written < 1)
                     throw new TransferException($"{written} bytes were sent! " +
                                                 "Null bytes could mean a connection shutdown.");
-            } catch {
-                if (AutoReconnect) await Reconnect(); // Try reconnecting
-                else throw; // Throw Exception if Socket should not Auto-reconnect
+            } catch (SocketException) {
+                if (AutoReconnect) {
+                    await Reconnect(); // Try reconnecting
+                } else {
+                    throw; // Throw if we're not trying to reconnect
+                }
             }
         }
 
-        public void Dispose() {
-            Disconnect();
-        }
+        public void Dispose() => Disconnect();
 
         #endregion
 
@@ -125,7 +131,7 @@ namespace GenericProtocol.Implementation {
         // Endless Start reading loop
         private async void StartReceiving() {
             // Loop theoretically infinetly
-            while (true)
+            while (true) {
                 try {
                     // Read the leading "byte"
                     long size = await ReadLeading();
@@ -149,10 +155,13 @@ namespace GenericProtocol.Implementation {
                     ReceivedMessage?.Invoke(EndPoint, message); // call event
                 } catch (ObjectDisposedException) {
                     return; // Socket was closed & disposed -> exit
-                } catch {
-                    if (!AutoReconnect) throw; // Throw Exception if Socket should not Auto-reconnect
+                } catch (SocketException) {
+                    if (!AutoReconnect) {
+                        await Reconnect(); // Try reconnecting on an error, then continue receiving
+                    }
                 }
-            // Listen again after client connected
+                // Listen again after client connected
+            }
         }
 
         // Read the prefix from a message (number of following bytes)
@@ -186,15 +195,20 @@ namespace GenericProtocol.Implementation {
 
         // Reconnect the Socket connection
         private async Task Reconnect() {
+            // Don't reconnect if we're already reconnecting somewhere else
+            if (ConnectionStatus == ConnectionStatus.Connecting) return;
+
+            ConnectionStatus = ConnectionStatus.Connecting; // Connecting...
             while (true) {
                 try {
-                    Socket.Disconnect(true);
-                    await Connect();
+                    Socket.Disconnect(true); // Disconnect and reserve socket
+                    await Socket.ConnectAsync(EndPoint); // Connect to Server
+                    ConnectionStatus = ConnectionStatus.Connected;
                     return;
                 } catch (SocketException) {
                     // could not connect
                 }
-                await Task.Delay(Constants.ReconnectInterval);
+                await Task.Delay(Constants.ReconnectInterval); // Try to reconnect all x milliseconds
             }
         }
 
@@ -203,14 +217,18 @@ namespace GenericProtocol.Implementation {
             while (true) {
                 await Task.Delay(Constants.PingDelay);
 
-                bool isAlive = Socket.Ping();
-                if (isAlive) continue; // Client responded
+                bool isAlive = Socket.Ping(); // Try to ping the server
+                if (isAlive) continue; // Client responded, continue pinger
 
+                // ---- Socket is NOT alive: ---- //
                 ConnectionLost?.Invoke(EndPoint);
                 // Client does not respond, try reconnecting, or disconnect & exit
-                if (AutoReconnect) await Reconnect();
-                else Disconnect();
-                return;
+                if (AutoReconnect) {
+                    await Reconnect(); // Wait for reconnect
+                } else {
+                    Disconnect(); // Stop and exit
+                    return;
+                }
             }
         }
 
