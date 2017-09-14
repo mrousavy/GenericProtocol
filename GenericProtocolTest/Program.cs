@@ -33,7 +33,7 @@ namespace GenericProtocolTest {
 
         private static void StartClient() {
             _client = new ProtoClient<string>(IPAddress.Parse("127.0.0.1"), 1024);
-            _client.Start().GetAwaiter().GetResult();
+            _client.Connect().GetAwaiter().GetResult();
             _client.ReceivedMessage += ClientMessageReceived;
             _client.ConnectionLost += Client_ConnectionLost;
             _client.Send("Hello Server!").GetAwaiter().GetResult();

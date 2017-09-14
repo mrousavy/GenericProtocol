@@ -18,6 +18,7 @@ namespace GenericProtocol.Implementation {
 
         public const int MaxConnectionsBacklog = 10; // Maximum connections for server listening
         public const int PingDelay = 5000; // Ping every x milliseconds
+        public const int ReconnectInterval = 5000; // Try reconnecting every x milliseconds
     }
 
 

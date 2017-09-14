@@ -46,12 +46,12 @@ namespace GenericProtocol {
         ///     True, if the <see cref="ProtoClient{T}" />
         ///     should be operating on a seperate Thread.
         /// </param>
-        Task Start(bool seperateThread);
+        Task Connect(bool seperateThread);
 
         /// <summary>
         ///     Gracefully disconnect from the Server
         /// </summary>
-        void Stop();
+        void Disconnect();
 
         /// <summary>
         ///     Send a new Message to the Server

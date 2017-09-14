@@ -12,7 +12,7 @@ namespace GenericProtocol.Implementation {
     public class BinaryUplink : IClient<byte[]> {
         #region Properties
         public int ReceiveBufferSize { get; set; } = Constants.ReceiveBufferSize;
-        public int SendBufferSize { get; set; }= Constants.SendBufferSize;
+        public int SendBufferSize { get; set; } = Constants.SendBufferSize;
         private IPEndPoint EndPoint { get; }
         private Socket Socket { get; }
         public bool AutoReconnect { get; set; }
@@ -25,7 +25,7 @@ namespace GenericProtocol.Implementation {
         /// <summary>
         ///     Create a new instance of the <see cref="BinaryUplink" />
         ///     with the default <see cref="AddressFamily" /> and <see cref="SocketType" />.
-        ///     Use <see cref="Start" /> to start and connect the socket.
+        ///     Use <see cref="Connect" /> to start and connect the socket.
         /// </summary>
         /// <param name="address">The server's <see cref="IPAddress" /> to connect to</param>
         /// <param name="port">The server's Port to connect to</param>
@@ -35,7 +35,7 @@ namespace GenericProtocol.Implementation {
         /// <summary>
         ///     Create a new instance of the <see cref="BinaryUplink" />
         ///     with the default <see cref="AddressFamily" /> and <see cref="SocketType" />.
-        ///     Use <see cref="Start" /> to start and connect the socket.
+        ///     Use <see cref="Connect" /> to start and connect the socket.
         /// </summary>
         /// <param name="family">
         ///     The <see cref="AddressFamily" />
@@ -55,7 +55,7 @@ namespace GenericProtocol.Implementation {
 
         #region Functions
 
-        public async Task Start(bool seperateThread = false) {
+        public async Task Connect(bool seperateThread = false) {
             await Socket.ConnectAsync(EndPoint);
 
             if (seperateThread) {
@@ -69,7 +69,7 @@ namespace GenericProtocol.Implementation {
             }
         }
 
-        public void Stop() {
+        public void Disconnect() {
             try {
                 Socket?.Disconnect(false);
                 Socket?.Close();
@@ -112,7 +112,7 @@ namespace GenericProtocol.Implementation {
         }
 
         public void Dispose() {
-            Stop();
+            Disconnect();
         }
 
         #endregion
@@ -181,8 +181,16 @@ namespace GenericProtocol.Implementation {
 
         // Reconnect the Socket connection
         private async Task Reconnect() {
-            Socket.Disconnect(true);
-            await Start();
+            while (true) {
+                try {
+                    Socket.Disconnect(true);
+                    await Connect();
+                    return;
+                } catch (SocketException) {
+                    // could not connect
+                }
+                await Task.Delay(Constants.ReconnectInterval);
+            }
         }
 
         // Keep server connection alive by pinging
@@ -196,7 +204,7 @@ namespace GenericProtocol.Implementation {
                 ConnectionLost?.Invoke(EndPoint);
                 // Client does not respond, try reconnecting, or disconnect & exit
                 if (AutoReconnect) await Reconnect();
-                else Stop();
+                else Disconnect();
                 return;
             }
         }
