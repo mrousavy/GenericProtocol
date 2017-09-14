@@ -12,6 +12,7 @@ namespace GenericProtocol.Implementation {
     ///     The server for the protocol for transferring binary large objects (BLOBs) like images or files.
     /// </summary>
     public class BinaryDownlink {
+        // TODO:
         //#region Properties
 
         //public int MaxConnectionsBacklog = Constants.MaxConnectionsBacklog;
