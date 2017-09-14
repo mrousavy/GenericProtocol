@@ -32,7 +32,7 @@ namespace GenericProtocol {
         /// <summary>
         ///     Represents the current status of the Connection
         /// </summary>
-        ConnectionStatus ConnectionStatus { get; set; }
+        ConnectionStatus ConnectionStatus { get; }
         /// <summary>
         ///     Event for received messages
         /// </summary>

@@ -5,7 +5,7 @@
     Generic Protocol
   </h1>
 
-  <blockquote align="center">⚡️ A fast TCP event based buffered server/client protocol for transferring data over the (inter)net in .NET Core/Classic 🌐</blockquote>
+  <blockquote align="center">⚡️ A fast TCP event based buffered server/client protocol for transferring data over the (inter)net in .NET 🌐</blockquote>
 
   <p align="center">
     <a href="https://ci.appveyor.com/project/mrousavy/genericprotocol">
@@ -14,13 +14,19 @@
 	<a href="https://www.nuget.org/packages/GenericProtocol"/>
 		<img src="https://img.shields.io/nuget/v/GenericProtocol.svg">
 	</a>
+	<a href="https://www.nuget.org/packages/GenericProtocol/">
+		<img src="https://img.shields.io/nuget/dt/GenericProtocol.svg">
+	</a>
+	<a href="https://docs.microsoft.com/en-us/dotnet/standard/net-standard">
+		<img src="https://img.shields.io/badge/.NET-Standard-lightgrey.svg">
+	</a>
   </p>
 <p/>
 
 ## Why?
-> Sending whole objects over the net was never easier
+> Send whole objects over the net easier and faster
 
-1. Send **any** .NET `object` 
+1. Send nearly **any** .NET `object`
 (See: [supported](https://github.com/neuecc/ZeroFormatter#built-in-support-types), [custom](https://github.com/neuecc/ZeroFormatter#quick-start)) :package:
 2. Send/Receive **faster** by **buffered send/receive** and **ZeroFormatter**'s **fast (de-)serializing** :dash:
 3. Automatically **correct errors** with **TCP** and **Auto-reconnect** :white_check_mark:
@@ -55,15 +61,15 @@ Are you [connecting to a server](#client), or **are you** [the server](#server)?
 
 
 ## Client
-Connect to a [server](#server):
+### Connect to a [server](#server):
 ```csharp
 IClient client = await Factory.StartNewClient<string>("82.205.121.132", 1024, true);
 ```
-The Factory will construct and connect a new `IClient<T>` object, where `<T>` is the object
-you want to send over the net. This can be ([supported](https://github.com/neuecc/ZeroFormatter#built-in-support-types))
-built in types, or custom types marked with `[ZeroFormattable]` (see [here](https://github.com/neuecc/ZeroFormatter#quick-start))
+The Factory will **construct and connect** a new `IClient<T>` object, where `<T>` is the object
+you want to **send over the net**. This can be ([supported](https://github.com/neuecc/ZeroFormatter#built-in-support-types))
+**built in types** or **custom types** marked with `[ZeroFormattable]` (see [here](https://github.com/neuecc/ZeroFormatter#quick-start))
 
-Send/Receive your objects (`string` in this example):
+### Send/Receive your objects (`string` in this example):
 ```csharp
 // Attach to the Message Received event
 client.ReceivedMessage += MyMessageReceivedCallback; // void MyCallback(string)
@@ -72,7 +78,7 @@ client.ReceivedMessage += MyMessageReceivedCallback; // void MyCallback(string)
 await client.Send("Hello server!");
 ```
 
-Send/Receive custom objects:
+### Send/Receive custom objects:
 ```csharp
 //////////////////////
 // MessageObject.cs //
@@ -103,6 +109,35 @@ var msgObject = new MessageObject() {
 }
 await client.Send(msgObject);
 // (Optionally configure your Server so that it should redirect to the Recipient)
+```
+
+### Send large binary content
+```csharp
+IClient client = await Factory.StartNewBinaryDownlink("82.205.121.132", 1024, true);
+client.Send(bytes); // bytes can be a large file for example
+```
+Use `BinaryDownlinks` when you just want to **send binary content** (Files, Images, ..). The `BinaryDownlink` will skip the serialization
+and send buffered right away.
+
+### Other
+```csharp
+// Automatically try to reconnect on disconnects
+client.AutoReconnect = true;
+// Set the reading buffer size for incoming data
+client.ReceiveBufferSize = 2048;
+// Set the writing buffer size for outgoing data
+client.SendBufferSize = 2048;
+// Get the current Connection status
+var status = client.ConnectionStatus;
+// Received Message handler
+client.ReceivedMessage += ...;
+// Connection to server lost handler
+client.ConnectionLost += ...;
+// Manually Disconnect
+client.Disconnect();
+// Always Dispose after you are done with the client
+client.Dispose();
+// (or use the "using" statement)
 ```
 
 ## Server
