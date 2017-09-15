@@ -36,7 +36,7 @@
 
 Sending objects:
 ```csharp
-client.Send(someObject);
+await client.Send(someObject);
 ```
 
 ...on the other end:
