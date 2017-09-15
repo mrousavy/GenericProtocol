@@ -1,16 +1,21 @@
 ﻿using System;
 using System.Net;
+using GenericProtocol;
 using GenericProtocol.Implementation;
 
 namespace GenericProtocolTest {
     public class Program {
         private static ProtoServer<string> _server;
         private static ProtoClient<string> _client;
-        private static bool TestServer = false;
-        private static bool TestClient = true;
+        private static readonly bool TestServer = false;
+        private static readonly bool TestClient = true;
         private static readonly IPAddress ServerIp = IPAddress.Parse("10.0.105.1");
 
         private static void Main(string[] args) {
+            INetworkDiscovery discovery = new NetworkDiscovery();
+            discovery.Host(IPAddress.Any);
+            discovery.Discover(IPAddress.Any);
+
             if (TestServer)
                 StartServer();
             if (TestClient)
@@ -32,11 +37,13 @@ namespace GenericProtocolTest {
 
 
         private static void StartClient() {
-            _client = new ProtoClient<string>(ServerIp, 1024);
-            _client.AutoReconnect = true;
-            _client.Connect().GetAwaiter().GetResult();
+            _client = new ProtoClient<string>(ServerIp, 1024) {AutoReconnect = true};
             _client.ReceivedMessage += ClientMessageReceived;
             _client.ConnectionLost += Client_ConnectionLost;
+
+            Console.WriteLine("Connecting");
+            _client.Connect().GetAwaiter().GetResult();
+            Console.WriteLine("Connected!");
             _client.Send("Hello Server!").GetAwaiter().GetResult();
         }
 
