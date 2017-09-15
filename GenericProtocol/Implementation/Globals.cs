@@ -38,7 +38,7 @@ namespace GenericProtocol.Implementation {
         public const int SendBufferSize = 1024; // Byte buffer size for sending data
 
         // Number of bytes to reserve for the byte size that's going to get sent/received
-        public const int LeadingByteSize = 32;
+        public const int LeadingByteSize = sizeof(int);
 
         public const int MaxConnectionsBacklog = 10; // Maximum connections for server listening
         public const int PingDelay = 5000; // Ping every x milliseconds

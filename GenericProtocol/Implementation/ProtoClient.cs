@@ -165,8 +165,8 @@ namespace GenericProtocol.Implementation {
         }
 
         // Read the prefix from a message (number of following bytes)
-        private async Task<long> ReadLeading() {
-            byte[] bytes = new byte[sizeof(long)];
+        private async Task<int> ReadLeading() {
+            byte[] bytes = new byte[Constants.LeadingByteSize];
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
             // read leading bytes
             int read = await Socket.ReceiveAsync(segment, SocketFlags.None);
@@ -176,14 +176,14 @@ namespace GenericProtocol.Implementation {
                                             "Null bytes could mean a connection shutdown.");
 
             // size of the following byte[]
-            long size = ZeroFormatterSerializer.Deserialize<long>(segment.Array);
+            int size = BitConverter.ToInt32(segment.Array, 0);
             return size;
         }
 
         // Send the prefix from a message (number of following bytes)
-        private async Task SendLeading(long size) {
+        private async Task SendLeading(int size) {
             // build byte[] out of size
-            byte[] bytes = ZeroFormatterSerializer.Serialize(size);
+            byte[] bytes = BitConverter.GetBytes(size);
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
             // send leading bytes
             int sent = await Socket.SendAsync(segment, SocketFlags.None);

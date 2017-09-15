@@ -76,7 +76,7 @@ namespace GenericProtocol.Implementation {
         public void Stop() {
             foreach (KeyValuePair<IPEndPoint, Socket> kvp in Clients)
                 try {
-                    DisconnectClient(kvp.Value);
+                    DisconnectClient(kvp.Key);
                 } catch {
                     // could not disconnect client
                 }
@@ -186,12 +186,12 @@ namespace GenericProtocol.Implementation {
                     ReceivedMessage?.Invoke(endpoint, message); // call event
                 } catch (SocketException ex) {
                     Console.WriteLine(ex.ErrorCode);
-                    bool success = DisconnectClient(client); // try to disconnect
+                    bool success = DisconnectClient(endpoint); // try to disconnect
                     if (success) // Exit Reading loop once successfully disconnected
                         return;
                 } catch (TransferException) {
                     // 0 read bytes = null byte
-                    bool success = DisconnectClient(client); // try to disconnect
+                    bool success = DisconnectClient(endpoint); // try to disconnect
                     if (success) // Exit Reading loop once successfully disconnected
                         return;
                 }
@@ -207,32 +207,16 @@ namespace GenericProtocol.Implementation {
                 if (isAlive) continue; // Client responded
 
                 // Client does not respond, disconnect & exit
-                DisconnectClient(client);
+                DisconnectClient(client.RemoteEndPoint as IPEndPoint);
                 return;
             }
         }
 
         // Disconnect a client; returns true if successful
-        private bool DisconnectClient(Socket client) {
-            KeyValuePair<IPEndPoint, Socket>[] filtered = Clients.Where(c => c.Value == client).ToArray();
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered)
-                try {
-                    kvp.Value.Disconnect(false); // Gracefully disconnect socket
-                    kvp.Value.Close();
-                    kvp.Value.Dispose();
-
-                    Clients.Remove(kvp.Key); // Remove from collection
-                    ClientDisconnected?.Invoke(kvp.Key); // Event
-                } catch {
-                    // Socket is either already disconnected, or failing to disconnect. try ping
-                    return !kvp.Value.Ping();
-                }
-            return true;
-        }
-
-        // Disconnect a client; returns true if successful
         private bool DisconnectClient(IPEndPoint endPoint) {
-            KeyValuePair<IPEndPoint, Socket>[] filtered = Clients.Where(c => c.Key.Equals(endPoint)).ToArray();
+            // Get all EndPoints/Sockets where the endpoint matches with this argument
+            var filtered = Clients.Where(c => c.Key.Equals(endPoint)).ToArray();
+            // .count should always be 1, CAN be more -> Loop
             foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered)
                 try {
                     kvp.Value.Disconnect(false); // Gracefully disconnect socket
@@ -249,8 +233,8 @@ namespace GenericProtocol.Implementation {
         }
 
         // Read the prefix from a message (number of following bytes)
-        private async Task<long> ReadLeading(Socket client) {
-            byte[] bytes = new byte[sizeof(long)];
+        private async Task<int> ReadLeading(Socket client) {
+            byte[] bytes = new byte[Constants.LeadingByteSize];
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
             // read leading bytes
             int read = await client.ReceiveAsync(segment, SocketFlags.None);
@@ -260,14 +244,14 @@ namespace GenericProtocol.Implementation {
                                             "Null bytes could mean a connection shutdown.");
 
             // size of the following byte[]
-            long size = ZeroFormatterSerializer.Deserialize<long>(segment.Array);
+            int size = BitConverter.ToInt32(segment.Array, 0);
             return size;
         }
 
         // Send the prefix from a message (number of following bytes)
-        private async Task SendLeading(long size, Socket client) {
+        private async Task SendLeading(int size, Socket client) {
             // build byte[] out of size
-            byte[] bytes = ZeroFormatterSerializer.Serialize(size);
+            byte[] bytes = BitConverter.GetBytes(size);
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
             // send leading bytes
             int sent = await client.SendAsync(segment, SocketFlags.None);
