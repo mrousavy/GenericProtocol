@@ -6,15 +6,18 @@ using System.Threading.Tasks;
 
 namespace GenericProtocol.Implementation {
     public class NetworkDiscovery : INetworkDiscovery {
+        // Property to write on (this is just a writebuffer dump)
         private byte[] PingerBytes { get; } = { 1 };
 
         public async Task<IDiscoveryResult> Discover(IPAddress networkIp, int port = Constants.DiscoveryPort) {
             // TODO: Make network discovery work
             var ip = new IPEndPoint(IPAddress.Broadcast, port);
-            ArraySegment<byte> segment = new ArraySegment<byte>(PingerBytes);
-
-            using (var client = new TcpClient(ip)) {
-                int sent = await client.Client.SendAsync(segment, SocketFlags.Broadcast);
+            var segment = new ArraySegment<byte>(PingerBytes);
+            
+            // Open sender socket and dispose on finish
+            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp)) {
+                await client.ConnectAsync(ip); // Broadcast message and block until received (even though it's UDP?)
+                int sent = await client.SendAsync(segment, SocketFlags.Broadcast);
 
                 // Build result
                 var result = new DiscoveryResult {
@@ -27,16 +30,18 @@ namespace GenericProtocol.Implementation {
 
         public async void Host(IPAddress networkIp, int port = Constants.DiscoveryPort) {
             // TODO: Make network discovery work
-            ArraySegment<byte> segment = new ArraySegment<byte>(PingerBytes);
             var ip = new IPEndPoint(networkIp, port);
+            var segment = new ArraySegment<byte>(PingerBytes);
 
-            var client = new TcpListener(ip);
-            client.Start();
-
-            while (true) {
-                var socket = await client.AcceptSocketAsync();
-                int received = await socket.ReceiveAsync(segment, SocketFlags.None); // receive from new socket
-                if (received < 1) return; // Received null-byte terminator; exit function
+            // Open listener socket and dispose on error
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)) {
+                listener.Bind(ip); // bind to given IP Address
+                listener.Listen(Constants.MaxConnectionsBacklog); // Listen for incoming connections
+                while (true) { // Loop until error
+                    var client = await listener.AcceptAsync(); // Wait until client connects
+                    int received = await listener.ReceiveAsync(segment, SocketFlags.None); // receive from new socket
+                    if (received < 1) break; // Received null-byte terminator; exit function
+                }
             }
         }
     }
