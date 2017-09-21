@@ -94,7 +94,7 @@ namespace GenericProtocol.Implementation {
             if (socket == null) throw new Exception($"The IP Address {to} could not be found!");
 
             int size = bytes.Length;
-            await SendLeading(size, socket); // send leading size
+            await LeadingByteProcessor.SendLeading(socket, size); // send leading size
 
             // Write buffered
             int written = 0;
@@ -161,7 +161,7 @@ namespace GenericProtocol.Implementation {
             // Loop theoretically infinetly
             while (true)
                 try {
-                    long size = await ReadLeading(client); // leading "byte"
+                    long size = await LeadingByteProcessor.ReadLeading(client); // leading "byte"
 
                     byte[] bytes = new byte[size];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
@@ -230,35 +230,6 @@ namespace GenericProtocol.Implementation {
                     return !kvp.Value.Ping();
                 }
             return true;
-        }
-
-        // Read the prefix from a message (number of following bytes)
-        private async Task<int> ReadLeading(Socket client) {
-            byte[] bytes = new byte[Constants.LeadingByteSize];
-            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
-            // read leading bytes
-            int read = await client.ReceiveAsync(segment, SocketFlags.None);
-
-            if (read < 1)
-                throw new TransferException($"{read} lead-bytes were read! " +
-                                            "Null bytes could mean a connection shutdown.");
-
-            // size of the following byte[]
-            int size = BitConverter.ToInt32(segment.Array, 0);
-            return size;
-        }
-
-        // Send the prefix from a message (number of following bytes)
-        private async Task SendLeading(int size, Socket client) {
-            // build byte[] out of size
-            byte[] bytes = BitConverter.GetBytes(size);
-            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
-            // send leading bytes
-            int sent = await client.SendAsync(segment, SocketFlags.None);
-
-            if (sent < 1)
-                throw new TransferException($"{sent} lead-bytes were sent! " +
-                                            "Null bytes could mean a connection shutdown.");
         }
 
         #endregion
