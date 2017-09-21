@@ -32,7 +32,9 @@
 3. Automatically **correct errors** with **TCP** and **Auto-reconnect** :white_check_mark:
 4. Event based :zap:
 5. **Async**
-6. Made with love :heart:
+6. **Efficient Network Discovery** for other **GenericProtocol Hosts** :mag:
+7. **Fast binary links** for file/images/.. transfer :floppy_disk:
+8. Made with love :heart:
 
 Sending objects:
 ```csharp
