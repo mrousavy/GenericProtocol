@@ -88,7 +88,7 @@ public struct MessageObject {
 // Main.cs
 IClient client = await Factory.StartNewClient<MessageObject>("82.205.121.132", 1024);
 // MyMessageReceivedCallback will be called whenever this client receives a message
-client.ReceivedMessage += MyMessageReceivedCallback; // void MyCallback(MessageObject)
+client.ReceivedMessage += MyMessageReceivedCallback; // void MyCallback(IPEndPoint, MessageObject)
 
 var msgObject = new MessageObject() {
   Sender = "mrousavy",
@@ -132,7 +132,7 @@ IServer server = await Factory.StartNewServer<MessageObject>(IPAddress.Any, 1024
 ### Send/Receive your objects (`MessageObject` in this example):
 ```csharp
 // Attach to the Message Received event
-server.ReceivedMessage += MyMessageReceivedCallback; // void MyCallback(MessageObject, IPEndPoint)
+server.ReceivedMessage += MyMessageReceivedCallback; // void MyCallback(IPEndPoint, MessageObject)
 
 var msgObject = new MessageObject() {
   Sender = "server",
