@@ -42,7 +42,7 @@ namespace GenericProtocol.Implementation {
 
         public const int MaxConnectionsBacklog = 10; // Maximum connections for server listening
         public const int PingDelay = 5000; // Ping every x milliseconds
-        public const int ReconnectInterval = 5000; // Try reconnecting every x milliseconds
+        public const int ReconnectInterval = 500; // Try reconnecting every x milliseconds
 
         public const int DiscoveryPort = 8888; // The port use for other GenericProtocol client-discovery
     }

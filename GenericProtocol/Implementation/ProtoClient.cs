@@ -100,6 +100,7 @@ namespace GenericProtocol.Implementation {
                 int size = bytes.Length;
                 await LeadingByteProcessor.SendLeading(Socket, size); // Send receiver the byte count
 
+                //TODO: Decide whether to catch errors in buffer-loop and continue once fixed or cancel whole send?
                 int written = 0;
                 while (written < size) {
                     int send = size - written; // current buffer size
@@ -114,8 +115,10 @@ namespace GenericProtocol.Implementation {
                     throw new TransferException($"{written} bytes were sent! " +
                                                 "Null bytes could mean a connection shutdown.");
             } catch (SocketException) {
+                ConnectionLost?.Invoke(EndPoint);
+                // On any error - cancel whole buffered writing
                 if (AutoReconnect) {
-                    await Reconnect(); // Try reconnecting
+                    await Reconnect(); // Try reconnecting and re-send everything once reconnected
                 } else {
                     throw; // Throw if we're not trying to reconnect
                 }
@@ -138,6 +141,7 @@ namespace GenericProtocol.Implementation {
 
                     byte[] bytes = new byte[size];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+                    //TODO: Decide whether to catch errors in buffer-loop and continue once fixed or cancel whole receive?
                     // read until all data is read
                     int read = 0;
                     while (read < size) {

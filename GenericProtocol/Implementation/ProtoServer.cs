@@ -98,6 +98,7 @@ namespace GenericProtocol.Implementation {
             int size = bytes.Length;
             await LeadingByteProcessor.SendLeading(socket, size); // send leading size
 
+            //TODO: Do something when sending interrupts? Wait for client to come back?
             // Write buffered
             int written = 0;
             while (written < size) {
@@ -139,20 +140,16 @@ namespace GenericProtocol.Implementation {
         private async void StartListening() {
             Socket.Listen(10);
             // Loop theoretically infinetly
-            while (true)
-                try {
-                    var client = await Socket.AcceptAsync(); // Block until accept
-                    var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
-                    Sockets.Add(endpoint, client); // Add client to dictionary
+            while (true) {
+                var client = await Socket.AcceptAsync(); // Block until accept
+                var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
+                Sockets.Add(endpoint, client); // Add client to dictionary
 
-                    StartReading(client); // Start listening for data
-                    KeepAlive(client); // Keep client alive and ping
+                StartReading(client); // Start listening for data
+                KeepAlive(client); // Keep client alive and ping
 
-                    ClientConnected?.Invoke(endpoint); // call event
-                } catch (SocketException ex) {
-                    Console.WriteLine(ex.ErrorCode);
-                    //return;
-                }
+                ClientConnected?.Invoke(endpoint); // call event
+            }
             // Listen again after client connected
         }
 
@@ -161,12 +158,13 @@ namespace GenericProtocol.Implementation {
             var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
 
             // Loop theoretically infinetly
-            while (true)
+            while (true) {
                 try {
                     long size = await LeadingByteProcessor.ReadLeading(client); // leading "byte"
 
                     byte[] bytes = new byte[size];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+                    //TODO: Do something when receiving interrupts? Wait for client to come back?
                     // read until all data is read
                     int read = 0;
                     while (read < size) {
@@ -197,7 +195,7 @@ namespace GenericProtocol.Implementation {
                     if (success) // Exit Reading loop once successfully disconnected
                         return;
                 }
-            // Listen again after client connected
+            } // Listen again after client connected
         }
 
         // Keep a Client alive by pinging
