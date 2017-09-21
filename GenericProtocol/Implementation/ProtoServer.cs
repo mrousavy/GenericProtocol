@@ -11,8 +11,10 @@ namespace GenericProtocol.Implementation {
     public class ProtoServer<T> : IServer<T> {
         #region Properties
 
-        public int MaxConnectionsBacklog = Constants.MaxConnectionsBacklog;
-        public int ReceiveBufferSize = Constants.ReceiveBufferSize;
+        public int MaxConnectionsBacklog { get; set; } = Constants.MaxConnectionsBacklog;
+        public int ReceiveBufferSize { get; set; } = Constants.ReceiveBufferSize;
+        public int SendBufferSize { get; set; } = Constants.SendBufferSize;
+        public IEnumerable<IPEndPoint> Clients => Sockets.Keys;
 
         public event ConnectionContextHandler ClientConnected;
         public event ConnectionContextHandler ClientDisconnected;
@@ -20,7 +22,7 @@ namespace GenericProtocol.Implementation {
 
         private IPEndPoint EndPoint { get; }
         private Socket Socket { get; }
-        private IDictionary<IPEndPoint, Socket> Clients { get; }
+        private IDictionary<IPEndPoint, Socket> Sockets { get; }
 
         #endregion
 
@@ -51,7 +53,7 @@ namespace GenericProtocol.Implementation {
         /// <param name="address">The <see cref="IPAddress" /> to start this Protocol on</param>
         /// <param name="port">The Port to start this Protocol on</param>
         public ProtoServer(IPAddress address, int port, AddressFamily family, SocketType type) {
-            Clients = new Dictionary<IPEndPoint, Socket>();
+            Sockets = new Dictionary<IPEndPoint, Socket>();
             EndPoint = new IPEndPoint(address, port);
             Socket = new Socket(family, type, ProtocolType.Tcp);
         }
@@ -74,7 +76,7 @@ namespace GenericProtocol.Implementation {
         ///     Shutdown the server and all active clients
         /// </summary>
         public void Stop() {
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Clients)
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Sockets)
                 try {
                     DisconnectClient(kvp.Key);
                 } catch {
@@ -90,7 +92,7 @@ namespace GenericProtocol.Implementation {
             ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
 
             // Find socket
-            var socket = Clients.FirstOrDefault(c => c.Key.Equals(to)).Value;
+            var socket = Sockets.FirstOrDefault(c => c.Key.Equals(to)).Value;
             if (socket == null) throw new Exception($"The IP Address {to} could not be found!");
 
             int size = bytes.Length;
@@ -100,8 +102,8 @@ namespace GenericProtocol.Implementation {
             int written = 0;
             while (written < size) {
                 int send = size - written; // current buffer size
-                if (send > ReceiveBufferSize)
-                    send = ReceiveBufferSize; // max size
+                if (send > SendBufferSize)
+                    send = SendBufferSize; // max size
 
                 ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
                 written = await socket.SendAsync(slice, SocketFlags.None);
@@ -114,7 +116,7 @@ namespace GenericProtocol.Implementation {
 
         public async Task Broadcast(T message) {
             // Build list of Send(..) tasks
-            List<Task> tasks = Clients.Select(client => Send(message, client.Key)).ToList();
+            List<Task> tasks = Sockets.Select(client => Send(message, client.Key)).ToList();
             // await all
             await Task.WhenAll(tasks);
         }
@@ -141,7 +143,7 @@ namespace GenericProtocol.Implementation {
                 try {
                     var client = await Socket.AcceptAsync(); // Block until accept
                     var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
-                    Clients.Add(endpoint, client); // Add client to dictionary
+                    Sockets.Add(endpoint, client); // Add client to dictionary
 
                     StartReading(client); // Start listening for data
                     KeepAlive(client); // Keep client alive and ping
@@ -215,7 +217,7 @@ namespace GenericProtocol.Implementation {
         // Disconnect a client; returns true if successful
         private bool DisconnectClient(IPEndPoint endPoint) {
             // Get all EndPoints/Sockets where the endpoint matches with this argument
-            var filtered = Clients.Where(c => c.Key.Equals(endPoint)).ToArray();
+            var filtered = Sockets.Where(c => c.Key.Equals(endPoint)).ToArray();
             // .count should always be 1, CAN be more -> Loop
             foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered)
                 try {
@@ -223,7 +225,7 @@ namespace GenericProtocol.Implementation {
                     kvp.Value.Close();
                     kvp.Value.Dispose();
 
-                    Clients.Remove(kvp.Key); // Remove from collection
+                    Sockets.Remove(kvp.Key); // Remove from collection
                     ClientDisconnected?.Invoke(kvp.Key); // Event
                 } catch {
                     // Socket is either already disconnected, or failing to disconnect. try ping

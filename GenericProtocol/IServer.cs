@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using GenericProtocol.Implementation;
@@ -15,6 +16,25 @@ namespace GenericProtocol {
     ///     (has to be ZeroFormatter marked, see: <see href="https://github.com/neuecc/ZeroFormatter" />)
     /// </typeparam>
     public interface IServer<T> : IDisposable {
+        /// <summary>
+        ///     The size of the receive buffers (should be equal or 
+        ///     less than bandwidth)
+        /// </summary>
+        int ReceiveBufferSize { get; set; }
+        /// <summary>
+        ///     The size of the send buffers (should be equal or 
+        ///     less than bandwidth)
+        /// </summary>
+        int SendBufferSize { get; set; }
+        /// <summary>
+        ///     The maximum clients to queue on simultanious connection attempts
+        /// </summary>
+        int MaxConnectionsBacklog { get; set; }
+        /// <summary>
+        ///     An list of all the connected clients' <see cref="IPEndPoint"/>s
+        /// </summary>
+        IEnumerable<IPEndPoint> Clients { get; }
+
         /// <summary>
         ///     Event for just connected clients
         /// </summary>
