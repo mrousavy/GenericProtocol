@@ -134,12 +134,12 @@ namespace GenericProtocol.Implementation {
         #region Privates
 
         // Endless Start reading loop
-        private async void StartReceiving() {
+        private void StartReceiving() {
             // Loop theoretically infinetly
             while (true) {
                 try {
                     // Read the leading "byte"
-                    long size = await LeadingByteProcessor.ReadLeading(Socket).ConfigureAwait(false);
+                    long size = LeadingByteProcessor.ReadLeading(Socket).GetAwaiter().GetResult();
 
                     byte[] bytes = new byte[size];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
@@ -154,7 +154,7 @@ namespace GenericProtocol.Implementation {
 
                         ArraySegment<byte>
                             slice = segment.SliceEx(read, (int)receive); // get buffered portion of array
-                        read += await Socket.ReceiveAsync(slice, SocketFlags.None).ConfigureAwait(false);
+                        read += Socket.ReceiveAsync(slice, SocketFlags.None).GetAwaiter().GetResult();
                     }
 
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
@@ -165,7 +165,7 @@ namespace GenericProtocol.Implementation {
                 } catch (SocketException) {
                     ConnectionLost?.Invoke(EndPoint);
                     if (!AutoReconnect) {
-                        await Reconnect().ConfigureAwait(false); // Try reconnecting on an error, then continue receiving
+                        Reconnect().GetAwaiter().GetResult(); // Try reconnecting on an error, then continue receiving
                     }
                 }
                 // Listen again after client connected
@@ -175,7 +175,9 @@ namespace GenericProtocol.Implementation {
         // Reconnect the Socket connection
         private async Task Reconnect() {
             // Don't reconnect if we're already reconnecting somewhere else
-            if (ConnectionStatus == ConnectionStatus.Connecting) return;
+            if (ConnectionStatus == ConnectionStatus.Connecting) {
+                return;
+            }
 
             ConnectionStatus = ConnectionStatus.Connecting; // Connecting...
             while (true) {
@@ -197,7 +199,9 @@ namespace GenericProtocol.Implementation {
                 await Task.Delay(PingDelay).ConfigureAwait(false);
 
                 bool isAlive = Socket.Ping(); // Try to ping the server
-                if (isAlive) continue; // Client responded, continue pinger
+                if (isAlive) {
+                    continue; // Client responded, continue pinger
+                }
 
                 // ---- Socket is NOT alive: ---- //
                 ConnectionLost?.Invoke(EndPoint);

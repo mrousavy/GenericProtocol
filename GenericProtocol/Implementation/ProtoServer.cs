@@ -71,7 +71,9 @@ namespace GenericProtocol.Implementation {
 
             if (seperateThread) {
                 new Thread(StartListening).Start();
-            } else StartListening();
+            } else {
+                StartListening();
+            }
         }
 
         /// <summary>
@@ -87,7 +89,9 @@ namespace GenericProtocol.Implementation {
         }
 
         public async Task Send(T message, IPEndPoint to) {
-            if (message == null) throw new ArgumentNullException(nameof(message));
+            if (message == null) {
+                throw new ArgumentNullException(nameof(message));
+            }
 
             // Build a byte array of the serialized data
             byte[] bytes = ZeroFormatterSerializer.Serialize(message);
@@ -107,16 +111,18 @@ namespace GenericProtocol.Implementation {
             int written = 0;
             while (written < size) {
                 int send = size - written; // current buffer size
-                if (send > SendBufferSize)
+                if (send > SendBufferSize) {
                     send = SendBufferSize; // max size
+                }
 
                 ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
                 written = await socket.SendAsync(slice, SocketFlags.None).ConfigureAwait(false);
             }
 
-            if (written < 1)
+            if (written < 1) {
                 throw new TransferException($"{written} bytes were sent! " +
                                             "Null bytes could mean a connection shutdown.");
+            }
         }
 
         public async Task Broadcast(T message) {
@@ -173,17 +179,19 @@ namespace GenericProtocol.Implementation {
                     int read = 0;
                     while (read < size) {
                         long receive = size - read; // current buffer size
-                        if (receive > ReceiveBufferSize)
+                        if (receive > ReceiveBufferSize) {
                             receive = ReceiveBufferSize; // max size
+                        }
 
                         ArraySegment<byte>
                             slice = segment.SliceEx(read, (int)receive); // get buffered portion of array
                         read += await client.ReceiveAsync(slice, SocketFlags.None).ConfigureAwait(false);
                     }
 
-                    if (read < 1)
+                    if (read < 1) {
                         throw new TransferException($"{read} bytes were read! " +
                                                     "Null bytes could mean a connection shutdown.");
+                    }
 
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
@@ -196,8 +204,10 @@ namespace GenericProtocol.Implementation {
                 } catch (TransferException) {
                     // 0 read bytes = null byte
                     bool success = DisconnectClient(endpoint); // try to disconnect
-                    if (success) // Exit Reading loop once successfully disconnected
+                    if (success) {
+                        // Exit Reading loop once successfully disconnected
                         return;
+                    }
                 }
             } // Listen again after client connected
         }
