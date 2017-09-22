@@ -9,8 +9,7 @@ namespace GenericProtocolTest {
         private static ProtoClient<string> _client;
         private static bool TestServer { get; } = false;
         private static bool TestClient { get; } = false;
-        private static string IpAddress { get; } = "10.0.105.1";
-        private static readonly IPAddress ServerIp = IPAddress.Parse(IpAddress);
+        private static readonly IPAddress ServerIp = IPAddress.Loopback;
 
         private static void Main(string[] args) {
             INetworkDiscovery discovery = new NetworkDiscovery();
