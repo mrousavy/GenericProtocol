@@ -90,7 +90,7 @@ namespace GenericProtocol.Implementation {
         }
 
         public async Task Send(T message, IPEndPoint to) {
-            if (message == null) throw new ArgumentNullException(nameof(message));
+            if (message.Equals(default(T))) throw new ArgumentNullException(nameof(message));
 
             // Build a byte array of the serialized data
             byte[] bytes = ZeroFormatterSerializer.Serialize(message);
