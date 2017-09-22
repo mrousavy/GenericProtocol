@@ -161,4 +161,4 @@ server.SendBufferSize = 2048;
 server.MaxConnectionsBacklog = 8;
 ```
 
-License: [MIT](https://github.com/mrousavy/GenericProtocol/blob/master/LICENSE) | Thanks!
+License: [MIT](https://github.com/mrousavy/GenericProtocol/blob/master/LICENSE) | [Contributing](https://github.com/mrousavy/GenericProtocol/blob/master/CONTRIBUTING.md) | Thanks!
