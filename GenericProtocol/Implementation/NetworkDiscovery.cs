@@ -25,7 +25,7 @@ namespace GenericProtocol.Implementation {
                     using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp)) {
                         client.EnableBroadcast = true; // By default this is disabled
                         client.Bind(new IPEndPoint(address, port));
-                        int sent = await client.SendToAsync(segment, SocketFlags.None, ip);
+                        int sent = await client.SendToAsync(segment, SocketFlags.Broadcast, ip);
 
                         // Build result
                         var result = new DiscoveryResult(sent > 0, -1, null);
