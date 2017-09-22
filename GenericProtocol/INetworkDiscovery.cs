@@ -12,11 +12,8 @@ namespace GenericProtocol {
     public interface INetworkDiscovery {
         /// <summary>
         ///     Discover all <see cref="IClient{T}"/>s in the
-        ///     given network
+        ///     given network by sending a UDP broadcast message
         /// </summary>
-        /// <param name="networkIp">
-        ///     The network's IP to search for <see cref="IClient{T}"/>s in
-        /// </param>
         /// <param name="port">
         ///     The port to use for the discovery service
         ///     (same as used in <see cref="Host"/>)
@@ -25,7 +22,7 @@ namespace GenericProtocol {
         ///     A <see cref="IDiscoveryResult"/> containing all
         ///     discovery results
         /// </returns>
-        Task<IDiscoveryResult> Discover(IPAddress networkIp, int port = Constants.DiscoveryPort);
+        Task<IDiscoveryResult> Discover(int port = Constants.DiscoveryPort);
 
         /// <summary>
         ///     Start a new Listener on the given network which
@@ -33,6 +30,7 @@ namespace GenericProtocol {
         /// </summary>
         /// <param name="networkIp">
         ///     The network's IP to start listening in
+        ///     (By default: <see cref="IPAddress.Any"/>)
         /// </param>
         /// <param name="port">
         ///     The port to use for the discovery service

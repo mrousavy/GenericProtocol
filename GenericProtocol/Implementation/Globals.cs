@@ -44,7 +44,7 @@ namespace GenericProtocol.Implementation {
         public const int PingDelay = 5000; // Ping every x milliseconds
         public const int ReconnectInterval = 500; // Try reconnecting every x milliseconds
 
-        public const int DiscoveryPort = 8888; // The port use for other GenericProtocol client-discovery
+        public const int DiscoveryPort = 15000; // The port use for other GenericProtocol client-discovery
     }
 
 

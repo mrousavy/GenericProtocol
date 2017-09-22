@@ -14,7 +14,7 @@ namespace GenericProtocolTest {
         private static void Main(string[] args) {
             INetworkDiscovery discovery = new NetworkDiscovery();
             discovery.Host(IPAddress.Any);
-            discovery.Discover(IPAddress.Any);
+            discovery.Discover();
 
             if (TestServer)
                 StartServer();
