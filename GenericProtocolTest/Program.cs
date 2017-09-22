@@ -16,12 +16,10 @@ namespace GenericProtocolTest {
             discovery.Host(IPAddress.Any);
             discovery.Discover();
 
-            if (TestServer) {
+            if (TestServer)
                 StartServer();
-            }
-            if (TestClient) {
+            if (TestClient)
                 StartClient();
-            }
 
             Console.WriteLine("\n");
 

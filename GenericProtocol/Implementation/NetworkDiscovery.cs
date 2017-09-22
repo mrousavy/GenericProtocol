@@ -49,9 +49,7 @@ namespace GenericProtocol.Implementation {
                 while (true) { // Loop until error
                     // TODO: var client = await listener.AcceptAsync(); // Wait until client connects
                     int received = await listener.ReceiveAsync(segment, SocketFlags.None); // receive from new socket
-                    if (received < 1) {
-                        break; // Received null-byte terminator; exit function
-                    }
+                    if (received < 1) break; // Received null-byte terminator; exit function
                 }
             }
         }

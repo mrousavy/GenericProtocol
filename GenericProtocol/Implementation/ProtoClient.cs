@@ -92,9 +92,8 @@ namespace GenericProtocol.Implementation {
             if (message.Equals(default(T))) throw new ArgumentNullException(nameof(message));
 
             bool alive = Socket.Ping();
-            if (!alive) {
+            if (!alive)
                 throw new TransferException($"The Socket to {EndPoint} is not responding!");
-            }
 
             try {
                 // build byte[] out of message (serialize with ZeroFormatter)
@@ -108,18 +107,16 @@ namespace GenericProtocol.Implementation {
                 int written = 0;
                 while (written < size) {
                     int send = size - written; // current buffer size
-                    if (send > SendBufferSize) {
+                    if (send > SendBufferSize)
                         send = SendBufferSize; // max size
-                    }
 
                     ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
                     written = await Socket.SendAsync(slice, SocketFlags.None).ConfigureAwait(false);
                 }
 
-                if (written < 1) {
+                if (written < 1)
                     throw new TransferException($"{written} bytes were sent! " +
                                                 "Null bytes could mean a connection shutdown.");
-                }
             } catch (SocketException) {
                 ConnectionLost?.Invoke(EndPoint);
                 // On any error - cancel whole buffered writing
@@ -181,9 +178,7 @@ namespace GenericProtocol.Implementation {
         // Reconnect the Socket connection
         private async Task Reconnect() {
             // Don't reconnect if we're already reconnecting somewhere else
-            if (ConnectionStatus == ConnectionStatus.Connecting) {
-                return;
-            }
+            if (ConnectionStatus == ConnectionStatus.Connecting) return;
 
             ConnectionStatus = ConnectionStatus.Connecting; // Connecting...
             while (true) {
@@ -205,9 +200,7 @@ namespace GenericProtocol.Implementation {
                 await Task.Delay(PingDelay).ConfigureAwait(false);
 
                 bool isAlive = Socket.Ping(); // Try to ping the server
-                if (isAlive) {
-                    continue; // Client responded, continue pinger
-                }
+                if (isAlive) continue; // Client responded, continue pinger
 
                 // ---- Socket is NOT alive: ---- //
                 ConnectionLost?.Invoke(EndPoint);

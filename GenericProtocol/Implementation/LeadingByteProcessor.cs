@@ -20,10 +20,9 @@ namespace GenericProtocol.Implementation {
             // read leading bytes
             int read = await socket.ReceiveAsync(segment, SocketFlags.None);
 
-            if (read < 1) {
+            if (read < 1)
                 throw new TransferException($"{read} lead-bytes were read! " +
                                             "Null bytes could mean a connection shutdown.");
-            }
 
             // size of the following byte[]
             int size = BitConverter.ToInt32(segment.Array, 0);
@@ -43,10 +42,9 @@ namespace GenericProtocol.Implementation {
             // send leading bytes
             int sent = await socket.SendAsync(segment, SocketFlags.None);
 
-            if (sent < 1) {
+            if (sent < 1)
                 throw new TransferException($"{sent} lead-bytes were sent! " +
                                             "Null bytes could mean a connection shutdown.");
-            }
         }
     }
 }
