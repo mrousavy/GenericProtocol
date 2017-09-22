@@ -9,12 +9,17 @@ namespace GenericProtocol.Implementation {
         /// <param name="start">The start index of the slice</param>
         /// <param name="count">The length of the slice</param>
         public static ArraySegment<T> SliceEx<T>(this ArraySegment<T> segment, int start, int count) {
-            if (segment == default(ArraySegment<T>)) throw new ArgumentNullException(nameof(segment));
-            if (start < 0 || start >= segment.Count) throw new ArgumentOutOfRangeException(nameof(start));
-            if (count < 1 || start + count > segment.Count) throw new ArgumentOutOfRangeException(nameof(count));
+            if (segment == default(ArraySegment<T>)) {
+                throw new ArgumentNullException(nameof(segment));
+            }
+            if (start < 0 || start >= segment.Count) {
+                throw new ArgumentOutOfRangeException(nameof(start));
+            }
+            if (count < 1 || start + count > segment.Count) {
+                throw new ArgumentOutOfRangeException(nameof(count));
+            }
 
             return new ArraySegment<T>(segment.Array, start, count);
-            // return segment.Array.Skip(start).Take(count).ToArray();
         }
     }
 }

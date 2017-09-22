@@ -8,6 +8,12 @@
   <blockquote align="center">⚡️ A fast TCP event based buffered server/client protocol for transferring data over the (inter)net in .NET 🌐</blockquote>
 
   <p align="center">
+	<a href="https://docs.microsoft.com/en-us/dotnet/standard/net-standard">
+		<img src="https://img.shields.io/badge/.NET-Standard-lightgrey.svg">
+	</a>
+	<a href="https://www.codacy.com/app/mrousavy/GenericProtocol?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mrousavy/GenericProtocol&amp;utm_campaign=Badge_Grade">
+		<img src="https://api.codacy.com/project/badge/Grade/6850ab93bbb445eaa7902450addfab6b">
+	</a>
     <a href="https://ci.appveyor.com/project/mrousavy/genericprotocol">
       <img src="https://ci.appveyor.com/api/projects/status/vlgt97f4bpgci6pj?svg=true">
     </a>
@@ -16,9 +22,6 @@
 	</a>
 	<a href="https://www.nuget.org/packages/GenericProtocol/">
 		<img src="https://img.shields.io/nuget/dt/GenericProtocol.svg">
-	</a>
-	<a href="https://docs.microsoft.com/en-us/dotnet/standard/net-standard">
-		<img src="https://img.shields.io/badge/.NET-Standard-lightgrey.svg">
 	</a>
   </p>
 <p/>

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
@@ -16,7 +17,7 @@ namespace GenericProtocol.Implementation {
             var segment = new ArraySegment<byte>(PingerBytes);
 
             // Iterate through all interfaces and send broadcast on each
-            foreach (var netInterface in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()) {
+            foreach (var netInterface in NetworkInterface.GetAllNetworkInterfaces()) {
                 foreach (var address in netInterface.GetIPProperties().UnicastAddresses.Select(a => a.Address)) {
                     if (address.IsIPv6LinkLocal) continue; // Skip IPv6
 
@@ -35,7 +36,7 @@ namespace GenericProtocol.Implementation {
                     }
                 }
             }
-            throw new Exception("No network interfaces were found!");
+            throw new NetworkInterfaceException("No network interfaces were found!");
         }
 
     public async void Host(IPAddress networkIp, int port = Constants.DiscoveryPort) {

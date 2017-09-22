@@ -55,4 +55,8 @@ namespace GenericProtocol.Implementation {
     public class NotFoundException : Exception {
         public NotFoundException(string message) : base(message) { }
     }
+
+    public class NetworkInterfaceException : Exception {
+        public NetworkInterfaceException(string message) : base(message) { }
+    }
 }

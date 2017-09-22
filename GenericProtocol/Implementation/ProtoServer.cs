@@ -68,8 +68,9 @@ namespace GenericProtocol.Implementation {
         public void Start(bool seperateThread = false) {
             Socket.Bind(EndPoint);
 
-            if (seperateThread) new Thread(StartListening).Start();
-            else StartListening();
+            if (seperateThread) {
+                new Thread(StartListening).Start();
+            } else StartListening();
         }
 
         /// <summary>
@@ -93,10 +94,12 @@ namespace GenericProtocol.Implementation {
 
             // Find socket
             var socket = Sockets.FirstOrDefault(c => c.Key.Equals(to)).Value;
-            if (socket == null) throw new Exception($"The IP Address {to} could not be found!");
+            if (socket == null) {
+                throw new NetworkInterfaceException($"The IP Address {to} could not be found!");
+            }
 
             int size = bytes.Length;
-            await LeadingByteProcessor.SendLeading(socket, size); // send leading size
+            await LeadingByteProcessor.SendLeading(socket, size).ConfigureAwait(false); // send leading size
 
             //TODO: Do something when sending interrupts? Wait for client to come back?
             // Write buffered
@@ -107,7 +110,7 @@ namespace GenericProtocol.Implementation {
                     send = SendBufferSize; // max size
 
                 ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
-                written = await socket.SendAsync(slice, SocketFlags.None);
+                written = await socket.SendAsync(slice, SocketFlags.None).ConfigureAwait(false);
             }
 
             if (written < 1)
@@ -119,7 +122,7 @@ namespace GenericProtocol.Implementation {
             // Build list of Send(..) tasks
             List<Task> tasks = Sockets.Select(client => Send(message, client.Key)).ToList();
             // await all
-            await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
 
@@ -141,7 +144,7 @@ namespace GenericProtocol.Implementation {
             Socket.Listen(10);
             // Loop theoretically infinetly
             while (true) {
-                var client = await Socket.AcceptAsync(); // Block until accept
+                var client = await Socket.AcceptAsync().ConfigureAwait(false); // Block until accept
                 var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
                 Sockets.Add(endpoint, client); // Add client to dictionary
 
@@ -160,7 +163,7 @@ namespace GenericProtocol.Implementation {
             // Loop theoretically infinetly
             while (true) {
                 try {
-                    long size = await LeadingByteProcessor.ReadLeading(client); // leading "byte"
+                    long size = await LeadingByteProcessor.ReadLeading(client).ConfigureAwait(false); // leading
 
                     byte[] bytes = new byte[size];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
@@ -173,8 +176,8 @@ namespace GenericProtocol.Implementation {
                             receive = ReceiveBufferSize; // max size
 
                         ArraySegment<byte>
-                            slice = segment.SliceEx(read, (int) receive); // get buffered portion of array
-                        read += await client.ReceiveAsync(slice, SocketFlags.None);
+                            slice = segment.SliceEx(read, (int)receive); // get buffered portion of array
+                        read += await client.ReceiveAsync(slice, SocketFlags.None).ConfigureAwait(false);
                     }
 
                     if (read < 1)
@@ -201,10 +204,12 @@ namespace GenericProtocol.Implementation {
         // Keep a Client alive by pinging
         private async void KeepAlive(Socket client) {
             while (true) {
-                await Task.Delay(Constants.PingDelay);
+                await Task.Delay(Constants.PingDelay).ConfigureAwait(false);
 
                 bool isAlive = client.Ping();
-                if (isAlive) continue; // Client responded
+                if (isAlive) {
+                    continue; // Client responded
+                }
 
                 // Client does not respond, disconnect & exit
                 DisconnectClient(client.RemoteEndPoint as IPEndPoint);

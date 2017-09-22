@@ -61,7 +61,7 @@ namespace GenericProtocol.Implementation {
         public async Task Connect(bool seperateThread = false) {
             if (ConnectionStatus == ConnectionStatus.Connected) throw new Exception("Already connected!");
 
-            await Socket.ConnectAsync(EndPoint);
+            await Socket.ConnectAsync(EndPoint).ConfigureAwait(false);
             ConnectionStatus = ConnectionStatus.Connected;
 
             if (seperateThread) {
@@ -98,7 +98,7 @@ namespace GenericProtocol.Implementation {
                 ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
 
                 int size = bytes.Length;
-                await LeadingByteProcessor.SendLeading(Socket, size); // Send receiver the byte count
+                await LeadingByteProcessor.SendLeading(Socket, size).ConfigureAwait(false); // Send receiver the byte count
 
                 //TODO: Decide whether to catch errors in buffer-loop and continue once fixed or cancel whole send?
                 int written = 0;
@@ -108,7 +108,7 @@ namespace GenericProtocol.Implementation {
                         send = SendBufferSize; // max size
 
                     ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
-                    written = await Socket.SendAsync(slice, SocketFlags.None);
+                    written = await Socket.SendAsync(slice, SocketFlags.None).ConfigureAwait(false);
                 }
 
                 if (written < 1)
@@ -118,7 +118,7 @@ namespace GenericProtocol.Implementation {
                 ConnectionLost?.Invoke(EndPoint);
                 // On any error - cancel whole buffered writing
                 if (AutoReconnect) {
-                    await Reconnect(); // Try reconnecting and re-send everything once reconnected
+                    await Reconnect().ConfigureAwait(false); // Try reconnecting and re-send everything once reconnected
                 } else {
                     throw; // Throw if we're not trying to reconnect
                 }
@@ -137,7 +137,7 @@ namespace GenericProtocol.Implementation {
             while (true) {
                 try {
                     // Read the leading "byte"
-                    long size = await LeadingByteProcessor.ReadLeading(Socket);
+                    long size = await LeadingByteProcessor.ReadLeading(Socket).ConfigureAwait(false);
 
                     byte[] bytes = new byte[size];
                     ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
@@ -146,12 +146,13 @@ namespace GenericProtocol.Implementation {
                     int read = 0;
                     while (read < size) {
                         long receive = size - read; // current buffer size
-                        if (receive > ReceiveBufferSize)
+                        if (receive > ReceiveBufferSize) {
                             receive = ReceiveBufferSize; // max size
+                        }
 
                         ArraySegment<byte>
                             slice = segment.SliceEx(read, (int)receive); // get buffered portion of array
-                        read += await Socket.ReceiveAsync(slice, SocketFlags.None);
+                        read += await Socket.ReceiveAsync(slice, SocketFlags.None).ConfigureAwait(false);
                     }
 
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
@@ -160,8 +161,9 @@ namespace GenericProtocol.Implementation {
                 } catch (ObjectDisposedException) {
                     return; // Socket was closed & disposed -> exit
                 } catch (SocketException) {
+                    ConnectionLost?.Invoke(EndPoint);
                     if (!AutoReconnect) {
-                        await Reconnect(); // Try reconnecting on an error, then continue receiving
+                        await Reconnect().ConfigureAwait(false); // Try reconnecting on an error, then continue receiving
                     }
                 }
                 // Listen again after client connected
@@ -177,20 +179,20 @@ namespace GenericProtocol.Implementation {
             while (true) {
                 try {
                     Socket.Disconnect(true); // Disconnect and reserve socket
-                    await Socket.ConnectAsync(EndPoint); // Connect to Server
+                    await Socket.ConnectAsync(EndPoint).ConfigureAwait(false); // Connect to Server
                     ConnectionStatus = ConnectionStatus.Connected;
                     return;
                 } catch (SocketException) {
                     // could not connect
                 }
-                await Task.Delay(Constants.ReconnectInterval); // Try to reconnect all x milliseconds
+                await Task.Delay(Constants.ReconnectInterval).ConfigureAwait(false); // Try to reconnect all x milliseconds
             }
         }
 
         // Keep server connection alive by pinging
         private async void KeepAlive() {
             while (true) {
-                await Task.Delay(Constants.PingDelay);
+                await Task.Delay(Constants.PingDelay).ConfigureAwait(false);
 
                 bool isAlive = Socket.Ping(); // Try to ping the server
                 if (isAlive) continue; // Client responded, continue pinger
@@ -199,7 +201,7 @@ namespace GenericProtocol.Implementation {
                 ConnectionLost?.Invoke(EndPoint);
                 // Client does not respond, try reconnecting, or disconnect & exit
                 if (AutoReconnect) {
-                    await Reconnect(); // Wait for reconnect
+                    await Reconnect().ConfigureAwait(false); // Wait for reconnect
                 } else {
                     Disconnect(); // Stop and exit
                     return;
