@@ -1,6 +1,6 @@
-﻿using System;
+﻿using GenericProtocol.Implementation;
+using System;
 using System.Threading.Tasks;
-using GenericProtocol.Implementation;
 
 namespace GenericProtocol {
     /// <summary>
@@ -19,6 +19,14 @@ namespace GenericProtocol {
         ///     once a connection is lost
         /// </summary>
         bool AutoReconnect { get; set; }
+        /// <summary>
+        ///     Delay between reconnect attempts in milliseconds
+        /// </summary>
+        int ReconnectInterval { get; set; }
+        /// <summary>
+        ///     Delay between Server pings in milliseconds
+        /// </summary>
+        int PingDelay { get; set; }
         /// <summary>
         ///     The size of receive buffers (should be equal or 
         ///     less than bandwidth)

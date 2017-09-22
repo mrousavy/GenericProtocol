@@ -12,6 +12,7 @@ namespace GenericProtocol.Implementation {
         #region Properties
 
         public int MaxConnectionsBacklog { get; set; } = Constants.MaxConnectionsBacklog;
+        public int PingDelay { get; set; } = Constants.PingDelay;
         public int ReceiveBufferSize { get; set; } = Constants.ReceiveBufferSize;
         public int SendBufferSize { get; set; } = Constants.SendBufferSize;
         public IEnumerable<IPEndPoint> Clients => Sockets.Keys;
@@ -204,7 +205,7 @@ namespace GenericProtocol.Implementation {
         // Keep a Client alive by pinging
         private async void KeepAlive(Socket client) {
             while (true) {
-                await Task.Delay(Constants.PingDelay).ConfigureAwait(false);
+                await Task.Delay(PingDelay).ConfigureAwait(false);
 
                 bool isAlive = client.Ping();
                 if (isAlive) {

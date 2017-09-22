@@ -47,16 +47,16 @@ namespace GenericProtocol {
         ///     True if the <see cref="INetworkDiscovery"/>
         ///     found one or more <see cref="IClient{T}"/>s in the network
         /// </summary>
-        bool Any { get; set; }
+        bool Any { get; }
         /// <summary>
         ///     The count of the hosts that responded in the network
         /// </summary>
-        int HostsCount { get; set; }
+        int HostsCount { get; }
         /// <summary>
         ///     An <see cref="IEnumerable{T}"/> of <see cref="IPEndPoint"/>s
         ///     representing all Hosts that responded to a
         ///     <see cref="INetworkDiscovery.Discover"/> call
         /// </summary>
-        IEnumerable<IPEndPoint> Hosts { get; set; }
+        IEnumerable<IPEndPoint> Hosts { get; }
     }
 }

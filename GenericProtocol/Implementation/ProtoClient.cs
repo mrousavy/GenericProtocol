@@ -11,6 +11,8 @@ namespace GenericProtocol.Implementation {
 
         public int ReceiveBufferSize { get; set; } = Constants.ReceiveBufferSize;
         public int SendBufferSize { get; set; } = Constants.SendBufferSize;
+        public int ReconnectInterval { get; set; } = Constants.ReconnectInterval;
+        public int PingDelay { get; set; } = Constants.PingDelay;
         public ConnectionStatus ConnectionStatus { get; set; } // Status of connection
 
         public event ReceivedHandler<T> ReceivedMessage;
@@ -59,7 +61,7 @@ namespace GenericProtocol.Implementation {
         #region Functions
 
         public async Task Connect(bool seperateThread = false) {
-            if (ConnectionStatus == ConnectionStatus.Connected) throw new Exception("Already connected!");
+            if (ConnectionStatus == ConnectionStatus.Connected) throw new GenericProtocolException("Already connected!");
 
             await Socket.ConnectAsync(EndPoint).ConfigureAwait(false);
             ConnectionStatus = ConnectionStatus.Connected;
@@ -185,14 +187,14 @@ namespace GenericProtocol.Implementation {
                 } catch (SocketException) {
                     // could not connect
                 }
-                await Task.Delay(Constants.ReconnectInterval).ConfigureAwait(false); // Try to reconnect all x milliseconds
+                await Task.Delay(ReconnectInterval).ConfigureAwait(false); // Try to reconnect all x milliseconds
             }
         }
 
         // Keep server connection alive by pinging
         private async void KeepAlive() {
             while (true) {
-                await Task.Delay(Constants.PingDelay).ConfigureAwait(false);
+                await Task.Delay(PingDelay).ConfigureAwait(false);
 
                 bool isAlive = Socket.Ping(); // Try to ping the server
                 if (isAlive) continue; // Client responded, continue pinger

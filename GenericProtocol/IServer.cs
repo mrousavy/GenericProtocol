@@ -17,6 +17,10 @@ namespace GenericProtocol {
     /// </typeparam>
     public interface IServer<T> : IDisposable {
         /// <summary>
+        ///     Delay between Client pings in milliseconds
+        /// </summary>
+        int PingDelay { get; set; }
+        /// <summary>
         ///     The size of the receive buffers (should be equal or 
         ///     less than bandwidth)
         /// </summary>

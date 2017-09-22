@@ -28,10 +28,7 @@ namespace GenericProtocol.Implementation {
                         int sent = await client.SendToAsync(segment, SocketFlags.None, ip);
 
                         // Build result
-                        var result = new DiscoveryResult {
-                            Any = sent > 0,
-                            HostsCount = -1
-                        };
+                        var result = new DiscoveryResult(sent > 0, -1, null);
                         return result;
                     }
                 }
@@ -58,9 +55,33 @@ namespace GenericProtocol.Implementation {
         }
     }
 
-    public struct DiscoveryResult : IDiscoveryResult {
-        public bool Any { get; set; }
-        public int HostsCount { get; set; }
-        public IEnumerable<IPEndPoint> Hosts { get; set; }
+    public struct DiscoveryResult : IDiscoveryResult, IEquatable<DiscoveryResult> {
+        public bool Any { get; }
+        public int HostsCount { get; }
+        public IEnumerable<IPEndPoint> Hosts { get; }
+
+        public DiscoveryResult(bool any, int count, IEnumerable<IPEndPoint> hosts) {
+            Any = any;
+            HostsCount = count;
+            Hosts = hosts;
+        }
+
+        public bool Equals(DiscoveryResult other) {
+            return Any == other.Any && HostsCount == other.HostsCount && Equals(Hosts, other.Hosts);
+        }
+
+        public override bool Equals(object obj) {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is DiscoveryResult && Equals((DiscoveryResult) obj);
+        }
+
+        public override int GetHashCode() {
+            unchecked {
+                int hashCode = Any.GetHashCode();
+                hashCode = (hashCode * 397) ^ HostsCount;
+                hashCode = (hashCode * 397) ^ (Hosts != null ? Hosts.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
     }
 }
