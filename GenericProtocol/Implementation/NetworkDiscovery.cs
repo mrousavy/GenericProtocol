@@ -16,6 +16,7 @@ namespace GenericProtocol.Implementation {
             
             // Open sender socket and dispose on finish
             using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp)) {
+                client.EnableBroadcast = true;
                 await client.ConnectAsync(ip); // Broadcast message and block until received (even though it's UDP?)
                 int sent = await client.SendAsync(segment, SocketFlags.Broadcast);
 
@@ -34,7 +35,8 @@ namespace GenericProtocol.Implementation {
             var segment = new ArraySegment<byte>(PingerBytes);
 
             // Open listener socket and dispose on error
-            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp)) {
+            using (var listener = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp)) {
+                listener.EnableBroadcast = true;
                 listener.Bind(ip); // bind to given IP Address
                 listener.Listen(Constants.MaxConnectionsBacklog); // Listen for incoming connections
                 while (true) { // Loop until error
