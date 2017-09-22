@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace GenericProtocol.Implementation {
     public class NetworkDiscovery : INetworkDiscovery {
         // Property to write on (this is just a writebuffer dump)
-        private byte[] PingerBytes { get; } = {1};
+        private byte[] PingerBytes { get; } = { 1 };
 
         public async Task<IDiscoveryResult> Discover(int port = Constants.DiscoveryPort) {
             // TODO: Make network discovery work
@@ -36,7 +36,7 @@ namespace GenericProtocol.Implementation {
             throw new NetworkInterfaceException("No network interfaces were found!");
         }
 
-    public async void Host(IPAddress networkIp, int port = Constants.DiscoveryPort) {
+        public async void Host(IPAddress networkIp, int port = Constants.DiscoveryPort) {
             // TODO: Make network discovery work
             var ip = new IPEndPoint(networkIp, port);
             var segment = new ArraySegment<byte>(PingerBytes);
@@ -49,7 +49,9 @@ namespace GenericProtocol.Implementation {
                 while (true) { // Loop until error
                     // TODO: var client = await listener.AcceptAsync(); // Wait until client connects
                     int received = await listener.ReceiveAsync(segment, SocketFlags.None); // receive from new socket
-                    if (received < 1) break; // Received null-byte terminator; exit function
+                    if (received < 1) {
+                        break; // Received null-byte terminator; exit function
+                    }
                 }
             }
         }
@@ -72,7 +74,7 @@ namespace GenericProtocol.Implementation {
 
         public override bool Equals(object obj) {
             if (ReferenceEquals(null, obj)) return false;
-            return obj is DiscoveryResult && Equals((DiscoveryResult) obj);
+            return obj is DiscoveryResult && Equals((DiscoveryResult)obj);
         }
 
         public override int GetHashCode() {

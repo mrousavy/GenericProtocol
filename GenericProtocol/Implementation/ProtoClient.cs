@@ -92,7 +92,9 @@ namespace GenericProtocol.Implementation {
             if (message == null) throw new ArgumentNullException(nameof(message));
 
             bool alive = Socket.Ping();
-            if (!alive) throw new TransferException($"The Socket to {EndPoint} is not responding!");
+            if (!alive) {
+                throw new TransferException($"The Socket to {EndPoint} is not responding!");
+            }
 
             try {
                 // build byte[] out of message (serialize with ZeroFormatter)
@@ -106,16 +108,18 @@ namespace GenericProtocol.Implementation {
                 int written = 0;
                 while (written < size) {
                     int send = size - written; // current buffer size
-                    if (send > SendBufferSize)
+                    if (send > SendBufferSize) {
                         send = SendBufferSize; // max size
+                    }
 
                     ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
                     written = await Socket.SendAsync(slice, SocketFlags.None).ConfigureAwait(false);
                 }
 
-                if (written < 1)
+                if (written < 1) {
                     throw new TransferException($"{written} bytes were sent! " +
                                                 "Null bytes could mean a connection shutdown.");
+                }
             } catch (SocketException) {
                 ConnectionLost?.Invoke(EndPoint);
                 // On any error - cancel whole buffered writing

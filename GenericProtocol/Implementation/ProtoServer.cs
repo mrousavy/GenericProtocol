@@ -233,7 +233,7 @@ namespace GenericProtocol.Implementation {
             // Get all EndPoints/Sockets where the endpoint matches with this argument
             var filtered = Sockets.Where(c => c.Key.Equals(endPoint)).ToArray();
             // .count should always be 1, CAN be more -> Loop
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered)
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered) {
                 try {
                     kvp.Value.Disconnect(false); // Gracefully disconnect socket
                     kvp.Value.Close();
@@ -245,6 +245,7 @@ namespace GenericProtocol.Implementation {
                     // Socket is either already disconnected, or failing to disconnect. try ping
                     return !kvp.Value.Ping();
                 }
+            }
             return true;
         }
 
