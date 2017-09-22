@@ -8,7 +8,7 @@ namespace GenericProtocolTest {
         private static ProtoServer<string> _server;
         private static ProtoClient<string> _client;
         private static readonly bool TestServer = false;
-        private static readonly bool TestClient = true;
+        private static readonly bool TestClient = false;
         private static readonly IPAddress ServerIp = IPAddress.Parse("10.0.105.1");
 
         private static void Main(string[] args) {
@@ -16,10 +16,12 @@ namespace GenericProtocolTest {
             discovery.Host(IPAddress.Any);
             discovery.Discover();
 
-            if (TestServer)
+            if (TestServer) {
                 StartServer();
-            if (TestClient)
+            }
+            if (TestClient) {
                 StartClient();
+            }
 
             Console.WriteLine("\n");
 
