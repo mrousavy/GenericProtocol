@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using ZeroFormatter;
 
 namespace GenericProtocol.Implementation {
-    public class ProtoClient<T> : IClient<T>, IDisposable {
+    public class ProtoClient<T> : IClient<T> {
         #region Properties
 
         public int ReceiveBufferSize { get; set; } = Constants.ReceiveBufferSize;

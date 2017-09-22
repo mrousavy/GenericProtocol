@@ -7,9 +7,9 @@ namespace GenericProtocolTest {
     public class Program {
         private static ProtoServer<string> _server;
         private static ProtoClient<string> _client;
-        private static readonly bool TestServer = false;
-        private static readonly bool TestClient = false;
-        private static string IpAddress { get; set; } = "10.0.105.1";
+        private static bool TestServer { get; } = false;
+        private static bool TestClient { get; } = false;
+        private static string IpAddress { get; } = "10.0.105.1";
         private static readonly IPAddress ServerIp = IPAddress.Parse(IpAddress);
 
         private static void Main(string[] args) {
@@ -40,7 +40,7 @@ namespace GenericProtocolTest {
 
 
         private static void StartClient() {
-            _client = new ProtoClient<string>(ServerIp, 1024) {AutoReconnect = true};
+            _client = new ProtoClient<string>(ServerIp, 1024) { AutoReconnect = true };
             _client.ReceivedMessage += ClientMessageReceived;
             _client.ConnectionLost += Client_ConnectionLost;
 

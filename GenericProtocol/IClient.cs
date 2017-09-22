@@ -12,7 +12,7 @@ namespace GenericProtocol {
     ///     The Type of the Messages to use
     ///     (has to be ZeroFormatter marked, see: <see href="https://github.com/neuecc/ZeroFormatter" />)
     /// </typeparam>
-    public interface IClient<T> {
+    public interface IClient<T> : IDisposable {
         /// <summary>
         ///     Indicating whether this <see cref="IClient{T}"/>
         ///     should automatically reconnect to the <see cref="IServer{T}"/>
@@ -73,11 +73,5 @@ namespace GenericProtocol {
         ///     to serialize and send to the server
         /// </param>
         Task Send(T message);
-
-        /// <summary>
-        ///     Disconnect, dispose and release this <see cref="IClient{T}"/>
-        ///     instance's resources
-        /// </summary>
-        void Dispose();
     }
 }
