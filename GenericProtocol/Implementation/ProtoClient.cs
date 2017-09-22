@@ -89,7 +89,7 @@ namespace GenericProtocol.Implementation {
         }
 
         public async Task Send(T message) {
-            if (message == null) throw new ArgumentNullException(nameof(message));
+            if (message.Equals(default(T))) throw new ArgumentNullException(nameof(message));
 
             bool alive = Socket.Ping();
             if (!alive) {
@@ -131,7 +131,9 @@ namespace GenericProtocol.Implementation {
             }
         }
 
-        public void Dispose() => Disconnect();
+        public void Dispose() {
+            Disconnect();
+        }
 
         #endregion
 

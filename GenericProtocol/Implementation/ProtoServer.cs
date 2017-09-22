@@ -80,12 +80,13 @@ namespace GenericProtocol.Implementation {
         ///     Shutdown the server and all active clients
         /// </summary>
         public void Stop() {
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Sockets)
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Sockets) {
                 try {
                     DisconnectClient(kvp.Key);
                 } catch {
                     // could not disconnect client
                 }
+            }
         }
 
         public async Task Send(T message, IPEndPoint to) {

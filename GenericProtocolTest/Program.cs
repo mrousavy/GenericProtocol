@@ -4,7 +4,7 @@ using GenericProtocol;
 using GenericProtocol.Implementation;
 
 namespace GenericProtocolTest {
-    public class Program {
+    public static class Program {
         private static ProtoServer<string> _server;
         private static ProtoClient<string> _client;
         private static bool TestServer { get; } = false;
