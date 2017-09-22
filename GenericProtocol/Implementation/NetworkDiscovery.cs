@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
@@ -7,28 +8,37 @@ using System.Threading.Tasks;
 namespace GenericProtocol.Implementation {
     public class NetworkDiscovery : INetworkDiscovery {
         // Property to write on (this is just a writebuffer dump)
-        private byte[] PingerBytes { get; } = { 1 };
+        private byte[] PingerBytes { get; } = {1};
 
         public async Task<IDiscoveryResult> Discover(int port = Constants.DiscoveryPort) {
             // TODO: Make network discovery work
             var ip = new IPEndPoint(IPAddress.Broadcast, port);
             var segment = new ArraySegment<byte>(PingerBytes);
 
-            // Open sender socket and dispose on finish
-            using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp)) {
-                client.EnableBroadcast = true; // By default this is disabled
-                int sent = await client.SendToAsync(segment, SocketFlags.None, ip);
+            // Iterate through all interfaces and send broadcast on each
+            foreach (var netInterface in System.Net.NetworkInformation.NetworkInterface.GetAllNetworkInterfaces()) {
+                foreach (var address in netInterface.GetIPProperties().UnicastAddresses.Select(a => a.Address)) {
+                    if (address.IsIPv6LinkLocal) continue; // Skip IPv6
 
-                // Build result
-                var result = new DiscoveryResult {
-                    Any = sent > 0,
-                    HostsCount = -1
-                };
-                return result;
+                    // Open sender socket and dispose on finish
+                    using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp)) {
+                        client.EnableBroadcast = true; // By default this is disabled
+                        client.Bind(new IPEndPoint(address, port));
+                        int sent = await client.SendToAsync(segment, SocketFlags.None, ip);
+
+                        // Build result
+                        var result = new DiscoveryResult {
+                            Any = sent > 0,
+                            HostsCount = -1
+                        };
+                        return result;
+                    }
+                }
             }
+            throw new Exception("No network interfaces were found!");
         }
 
-        public async void Host(IPAddress networkIp, int port = Constants.DiscoveryPort) {
+    public async void Host(IPAddress networkIp, int port = Constants.DiscoveryPort) {
             // TODO: Make network discovery work
             var ip = new IPEndPoint(networkIp, port);
             var segment = new ArraySegment<byte>(PingerBytes);
