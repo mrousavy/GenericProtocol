@@ -12,9 +12,9 @@ namespace GenericProtocolTest {
         private static readonly IPAddress ServerIp = IPAddress.Loopback;
 
         private static void Main(string[] args) {
-            INetworkDiscovery discovery = new NetworkDiscovery();
-            discovery.Host(IPAddress.Any);
-            discovery.Discover();
+            //INetworkDiscovery discovery = new NetworkDiscovery();
+            //discovery.Host(IPAddress.Any);
+            //discovery.Discover();
 
             if (TestServer)
                 StartServer();
