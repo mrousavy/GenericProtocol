@@ -75,12 +75,9 @@ namespace GenericProtocol.Implementation
             Socket.Bind(EndPoint);
 
             if (seperateThread)
-            {
                 new Thread(StartListening).Start();
-            } else
-            {
+            else
                 StartListening();
-            }
         }
 
         /// <summary>
@@ -88,7 +85,7 @@ namespace GenericProtocol.Implementation
         /// </summary>
         public void Stop()
         {
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Sockets)
+            foreach (var kvp in Sockets)
             {
                 try
                 {
@@ -106,8 +103,8 @@ namespace GenericProtocol.Implementation
                 throw new ArgumentNullException(nameof(message));
 
             // Build a byte array of the serialized data
-            byte[] bytes = ZeroFormatterSerializer.Serialize(message);
-            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+            var bytes = ZeroFormatterSerializer.Serialize(message);
+            var segment = new ArraySegment<byte>(bytes);
 
             // Find socket
             var socket = Sockets.FirstOrDefault(c => c.Key.Equals(to)).Value;
@@ -123,12 +120,9 @@ namespace GenericProtocol.Implementation
             while (written < size)
             {
                 int send = size - written; // current buffer size
-                if (send > SendBufferSize)
-                {
-                    send = SendBufferSize; // max size
-                }
+                if (send > SendBufferSize) send = SendBufferSize; // max size
 
-                ArraySegment<byte> slice = segment.SliceEx(written, send); // buffered portion of array
+                var slice = segment.SliceEx(written, send); // buffered portion of array
                 written = await socket.SendAsync(slice, SocketFlags.None).ConfigureAwait(false);
             }
 
@@ -140,16 +134,13 @@ namespace GenericProtocol.Implementation
         public async Task Broadcast(T message)
         {
             // Build list of Send(..) tasks
-            List<Task> tasks = Sockets.Select(client => Send(message, client.Key)).ToList();
+            var tasks = Sockets.Select(client => Send(message, client.Key)).ToList();
             // await all
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }
 
 
-        public bool Kick(IPEndPoint endPoint)
-        {
-            return DisconnectClient(endPoint);
-        }
+        public bool Kick(IPEndPoint endPoint) => DisconnectClient(endPoint);
 
         public void Dispose()
         {
@@ -220,13 +211,13 @@ namespace GenericProtocol.Implementation
                 {
                     Console.WriteLine(ex.ErrorCode);
                     bool success = DisconnectClient(endpoint); // try to disconnect
-                    if (success) 
+                    if (success)
                         return; // Exit Reading loop once successfully disconnected
                 } catch (ObjectDisposedException)
                 {
                     // client object is disposed
                     bool success = DisconnectClient(endpoint); // try to disconnect
-                    if (success) 
+                    if (success)
                         return; // Exit Reading loop once successfully disconnected
                 } catch (TransferException)
                 {
@@ -283,6 +274,7 @@ namespace GenericProtocol.Implementation
                     return !kvp.Value.Ping();
                 }
             }
+
             return true;
         }
 

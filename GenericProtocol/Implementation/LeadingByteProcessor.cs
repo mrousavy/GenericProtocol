@@ -2,21 +2,24 @@
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
-namespace GenericProtocol.Implementation {
-    internal static class LeadingByteProcessor {
+namespace GenericProtocol.Implementation
+{
+    internal static class LeadingByteProcessor
+    {
         /// <summary>
         ///     Number of bytes to reserve for the byte size that's going to get sent/received
         /// </summary>
         internal static int LeadingByteSize { get; set; } = Constants.LeadingByteSize;
 
         /// <summary>
-        /// Read the prefix from a message (number of following bytes)
+        ///     Read the prefix from a message (number of following bytes)
         /// </summary>
         /// <param name="socket">The socket to read the leading bytes from</param>
-        /// <returns>Returns an <c>await</c>able <see cref="Task"/></returns>
-        internal static async Task<int> ReadLeading(Socket socket) {
-            byte[] bytes = new byte[LeadingByteSize];
-            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+        /// <returns>Returns an <c>await</c>able <see cref="Task" /></returns>
+        internal static async Task<int> ReadLeading(Socket socket)
+        {
+            var bytes = new byte[LeadingByteSize];
+            var segment = new ArraySegment<byte>(bytes);
             // read leading bytes
             int read = await socket.ReceiveAsync(segment, SocketFlags.None);
 
@@ -30,15 +33,16 @@ namespace GenericProtocol.Implementation {
         }
 
         /// <summary>
-        /// Send the prefix from a message (number of following bytes)
+        ///     Send the prefix from a message (number of following bytes)
         /// </summary>
         /// <param name="socket">The socket to read the leading bytes from</param>
         /// <param name="size">The size of the following message (= leading byte's value)</param>
-        /// <returns>Returns an <c>await</c>able <see cref="Task"/></returns>
-        internal static async Task SendLeading(Socket socket, int size) {
+        /// <returns>Returns an <c>await</c>able <see cref="Task" /></returns>
+        internal static async Task SendLeading(Socket socket, int size)
+        {
             // build byte[] out of size
-            byte[] bytes = BitConverter.GetBytes(size);
-            ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
+            var bytes = BitConverter.GetBytes(size);
+            var segment = new ArraySegment<byte>(bytes);
             // send leading bytes
             int sent = await socket.SendAsync(segment, SocketFlags.None);
 
