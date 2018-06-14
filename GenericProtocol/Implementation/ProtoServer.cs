@@ -7,8 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using ZeroFormatter;
 
-namespace GenericProtocol.Implementation {
-    public class ProtoServer<T> : IServer<T> {
+namespace GenericProtocol.Implementation
+{
+    public class ProtoServer<T> : IServer<T>
+    {
         #region Properties
 
         public int MaxConnectionsBacklog { get; set; } = Constants.MaxConnectionsBacklog;
@@ -37,7 +39,8 @@ namespace GenericProtocol.Implementation {
         /// <param name="address">The <see cref="IPAddress" /> to start this Protocol on</param>
         /// <param name="port">The Port to start this Protocol on</param>
         public ProtoServer(IPAddress address, int port) :
-            this(address, port, AddressFamily.InterNetwork, SocketType.Stream) { }
+            this(address, port, AddressFamily.InterNetwork, SocketType.Stream)
+        { }
 
         /// <summary>
         ///     Create a new instance of the <see cref="ProtoServer{T}" />.
@@ -53,7 +56,8 @@ namespace GenericProtocol.Implementation {
         /// </param>
         /// <param name="address">The <see cref="IPAddress" /> to start this Protocol on</param>
         /// <param name="port">The Port to start this Protocol on</param>
-        public ProtoServer(IPAddress address, int port, AddressFamily family, SocketType type) {
+        public ProtoServer(IPAddress address, int port, AddressFamily family, SocketType type)
+        {
             Sockets = new Dictionary<IPEndPoint, Socket>();
             EndPoint = new IPEndPoint(address, port);
             Socket = new Socket(family, type, ProtocolType.Tcp);
@@ -66,12 +70,15 @@ namespace GenericProtocol.Implementation {
         /// <summary>
         ///     Bind and Start the Server to the set IP Address.
         /// </summary>
-        public void Start(bool seperateThread = false) {
+        public void Start(bool seperateThread = false)
+        {
             Socket.Bind(EndPoint);
 
-            if (seperateThread) {
+            if (seperateThread)
+            {
                 new Thread(StartListening).Start();
-            } else {
+            } else
+            {
                 StartListening();
             }
         }
@@ -79,18 +86,24 @@ namespace GenericProtocol.Implementation {
         /// <summary>
         ///     Shutdown the server and all active clients
         /// </summary>
-        public void Stop() {
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Sockets) {
-                try {
+        public void Stop()
+        {
+            foreach (KeyValuePair<IPEndPoint, Socket> kvp in Sockets)
+            {
+                try
+                {
                     DisconnectClient(kvp.Key);
-                } catch {
+                } catch
+                {
                     // could not disconnect client
                 }
             }
         }
 
-        public async Task Send(T message, IPEndPoint to) {
-            if (message.Equals(default(T))) throw new ArgumentNullException(nameof(message));
+        public async Task Send(T message, IPEndPoint to)
+        {
+            if (message.Equals(default(T)))
+                throw new ArgumentNullException(nameof(message));
 
             // Build a byte array of the serialized data
             byte[] bytes = ZeroFormatterSerializer.Serialize(message);
@@ -98,7 +111,8 @@ namespace GenericProtocol.Implementation {
 
             // Find socket
             var socket = Sockets.FirstOrDefault(c => c.Key.Equals(to)).Value;
-            if (socket == null) throw new NetworkInterfaceException($"The IP Address {to} could not be found!");
+            if (socket == null)
+                throw new NetworkInterfaceException($"The IP Address {to} could not be found!");
 
             int size = bytes.Length;
             await LeadingByteProcessor.SendLeading(socket, size).ConfigureAwait(false); // send leading size
@@ -106,9 +120,11 @@ namespace GenericProtocol.Implementation {
             //TODO: Do something when sending interrupts? Wait for client to come back?
             // Write buffered
             int written = 0;
-            while (written < size) {
+            while (written < size)
+            {
                 int send = size - written; // current buffer size
-                if (send > SendBufferSize) {
+                if (send > SendBufferSize)
+                {
                     send = SendBufferSize; // max size
                 }
 
@@ -121,7 +137,8 @@ namespace GenericProtocol.Implementation {
                                             "Null bytes could mean a connection shutdown.");
         }
 
-        public async Task Broadcast(T message) {
+        public async Task Broadcast(T message)
+        {
             // Build list of Send(..) tasks
             List<Task> tasks = Sockets.Select(client => Send(message, client.Key)).ToList();
             // await all
@@ -129,11 +146,13 @@ namespace GenericProtocol.Implementation {
         }
 
 
-        public bool Kick(IPEndPoint endPoint) {
+        public bool Kick(IPEndPoint endPoint)
+        {
             return DisconnectClient(endPoint);
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
             Stop();
             Socket?.Dispose();
         }
@@ -143,10 +162,12 @@ namespace GenericProtocol.Implementation {
         #region Privates
 
         // Endless Start listening loop
-        private async void StartListening() {
+        private async void StartListening()
+        {
             Socket.Listen(10);
             // Loop theoretically infinetly
-            while (true) {
+            while (true)
+            {
                 var client = await Socket.AcceptAsync().ConfigureAwait(false); // Block until accept
                 var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
                 Sockets.Add(endpoint, client); // Add client to dictionary
@@ -157,29 +178,34 @@ namespace GenericProtocol.Implementation {
                 ClientConnected?.Invoke(endpoint); // call event
             }
             // Listen again after client connected
+
+            // ReSharper disable once FunctionNeverReturns
         }
 
         // Endless Start reading loop
-        private async void StartReading(Socket client) {
+        private async void StartReading(Socket client)
+        {
             var endpoint = client.RemoteEndPoint as IPEndPoint; // Get remote endpoint
 
             // Loop theoretically infinetly
-            while (true) {
-                try {
+            while (true)
+            {
+                try
+                {
                     long size = await LeadingByteProcessor.ReadLeading(client).ConfigureAwait(false); // leading
 
-                    byte[] bytes = new byte[size];
-                    ArraySegment<byte> segment = new ArraySegment<byte>(bytes);
-                    //TODO: Do something when receiving interrupts? Wait for client to come back?
+                    var bytes = new byte[size];
+                    var segment = new ArraySegment<byte>(bytes);
+                    // TODO: Do something when receiving interrupts? Wait for client to come back?
                     // read until all data is read
                     int read = 0;
-                    while (read < size) {
+                    while (read < size)
+                    {
                         long receive = size - read; // current buffer size
                         if (receive > ReceiveBufferSize)
                             receive = ReceiveBufferSize; // max size
 
-                        ArraySegment<byte>
-                            slice = segment.SliceEx(read, (int)receive); // get buffered portion of array
+                        var slice = segment.SliceEx(read, (int) receive); // get buffered portion of array
                         read += await client.ReceiveAsync(slice, SocketFlags.None).ConfigureAwait(false);
                     }
 
@@ -190,26 +216,44 @@ namespace GenericProtocol.Implementation {
                     var message = ZeroFormatterSerializer.Deserialize<T>(segment.Array);
 
                     ReceivedMessage?.Invoke(endpoint, message); // call event
-                } catch (SocketException ex) {
+                } catch (SocketException ex)
+                {
                     Console.WriteLine(ex.ErrorCode);
                     bool success = DisconnectClient(endpoint); // try to disconnect
-                    if (success) // Exit Reading loop once successfully disconnected
-                        return;
-                } catch (TransferException) {
+                    if (success) 
+                        return; // Exit Reading loop once successfully disconnected
+                } catch (ObjectDisposedException)
+                {
+                    // client object is disposed
+                    bool success = DisconnectClient(endpoint); // try to disconnect
+                    if (success) 
+                        return; // Exit Reading loop once successfully disconnected
+                } catch (TransferException)
+                {
                     // 0 read bytes = null byte
                     bool success = DisconnectClient(endpoint); // try to disconnect
-                    if (success) return; // Exit Reading loop once successfully disconnected
+                    if (success)
+                        return; // Exit Reading loop once successfully disconnected
                 }
             } // Listen again after client connected
         }
 
         // Keep a Client alive by pinging
-        private async void KeepAlive(Socket client) {
-            while (true) {
-                await Task.Delay(PingDelay).ConfigureAwait(false);
+        private async void KeepAlive(Socket client)
+        {
+            while (true)
+            {
+                try
+                {
+                    await Task.Delay(PingDelay).ConfigureAwait(false);
 
-                bool isAlive = client.Ping();
-                if (isAlive) continue; // Client responded
+                    bool isAlive = client.Ping();
+                    if (isAlive)
+                        continue; // Client responded
+                } catch (ObjectDisposedException)
+                {
+                    // client object is disposed
+                }
 
                 // Client does not respond, disconnect & exit
                 DisconnectClient(client.RemoteEndPoint as IPEndPoint);
@@ -218,19 +262,23 @@ namespace GenericProtocol.Implementation {
         }
 
         // Disconnect a client; returns true if successful
-        private bool DisconnectClient(IPEndPoint endPoint) {
+        private bool DisconnectClient(IPEndPoint endPoint)
+        {
             // Get all EndPoints/Sockets where the endpoint matches with this argument
             var filtered = Sockets.Where(c => c.Key.Equals(endPoint)).ToArray();
             // .count should always be 1, CAN be more -> Loop
-            foreach (KeyValuePair<IPEndPoint, Socket> kvp in filtered) {
-                try {
+            foreach (var kvp in filtered)
+            {
+                try
+                {
                     kvp.Value.Disconnect(false); // Gracefully disconnect socket
                     kvp.Value.Close();
                     kvp.Value.Dispose();
 
                     Sockets.Remove(kvp.Key); // Remove from collection
                     ClientDisconnected?.Invoke(kvp.Key); // Event
-                } catch {
+                } catch
+                {
                     // Socket is either already disconnected, or failing to disconnect. try ping
                     return !kvp.Value.Ping();
                 }

@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using GenericProtocol.Implementation;
-using ZeroFormatter;
 
 namespace GenericProtocol {
+    /// <inheritdoc />
     /// <summary>
-    ///     A <see cref="GenericProtocol" /> Server.
+    ///     A <see cref="N:GenericProtocol" /> Server.
     ///     <para />
-    ///     (<see cref="T" /> should be marked as <see cref="ZeroFormattableAttribute" />)
+    ///     (<see cref="!:T" /> should be marked as <see cref="T:ZeroFormatter.ZeroFormattableAttribute" />)
     /// </summary>
     /// <typeparam name="T">
     ///     The Type of the Messages to use
